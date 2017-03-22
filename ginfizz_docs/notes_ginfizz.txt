@@ -1,0 +1,182 @@
+notes pipype
+
+21 mars 2017
+
+docker
+docker pull miykael/nipype_level5
+-------------------------------
+
+----------------------
+puis docker
+docker build  -t thomashirsch/docker-ginfizz:v101 .
+
+docker run --rm -it -v /scratch/user/hirsch/datadir/data_set.tar.gz:/rstp_data/data_set.tar.gz -v /scratch/user/hirsch/datadirdocker:/outputdir  thomashirsch/docker-ginfizz:v101
+puis, dans le container
+/rstp_code/ginfizz_wrapper.sh /rstp_data/data_set.tar.gz /outputdir
+
+
+
+--------------------------------
+sous pipeau la commande à faire
+./ginfizz_wrapper.sh   /scratch/user/hirsch/datadir/data_set.tar.gz   /scratch/user/hirsch/datadirp
+
+
+name, spm_standalone, mcr, flibasedir, resultdir
+
+
+    #spm_standalone='/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh'
+    #mcr='/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91'
+    #flibasedir = '/scratch/user/hirsch/datadir/data_set/t0009/repos01'
+    #resultdir = '/scratch/user/hirsch/datadir/data_results'
+
+TOP
+
+$1   /scratch/user/hirsch/datadir/data_set.tar.gz
+$2  /scratch/user/hirsch/datadirp
+
+PB
+'th', '/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh', '/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91', '/scratch/user/hirsch/datadir/data_results_py'
+
+'/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh', '/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91', '/scratch/user/hirsch/datadir/data_set/t0009/repos01', '/scratch/user/hirsch/datadir/data_results'
+
+-----------------------------------------------------
+TOP
+pas mettre de virgule
+'/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh' '/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91' '/scratch/user/hirsch/datadir/data_set/t0009/repos01' '/homes_unix/hirsch/_pypipe/datadir/data_set/t0009/repos01/Atlases/TPM.nii'  '/scratch/user/hirsch/datadir/data_results_py'
+--------------------------------------------------------------------------
+
+preparation de la mise sous docker de ginfizz
+
+j'ai besoin de
+pipeau
+'/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh'
+'/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91'
+/scratch/user/hirsch/datadir/data_set.tar.gz
+/scratch/user/hirsch/datadirp/data_results
+
+sous docker
+'/opt/spm12/run_spm12.sh'
+'/opt/mcr/v91/'
+
+----------------------------------------
+traits.trait_errors.TraitError: Each element of the 'tissues' trait of a NewSegmentInputSpec instance must be a tuple of the form: (a tuple of the form: (an existing file name, an integer (int or long)), an integer (int or long), a tuple of the form: (a boolean, a boolean), a tuple of the form: (a boolean, a boolean)), but a value of (('/scratch/user/hirsch/datadirp/data_set//t0009/repos01/Atlases', 1), 1, (True, False), (False, False)) <type 'tuple'> was specified
+
+
+---------------------------------------
+
+depuis https://github.com/miykael/nipype_env/blob/master/level2/Dockerfile
+# Configure environment
+ENV MCR_VERSION=v91 \
+    MCR_INHIBIT_CTF_LOCK=1 \
+    PATH=/opt/mcr/v91/bin:$PATH \
+    MATLABCMD=/opt/mcr/v91/bin/glnxa64/MATLABWindow
+ENV LD_LIBRARY_PATH=/opt/mcr/${MCR_VERSION}/runtime/glnxa64:/opt/mcr/${MCR_VERSION}/bin/glnxa64:/opt/mcr/${MCR_VERSION}/sys/os/glnxa64:/opt/mcr/${MCR_VERSION}/sys/opengl/lib/glnxa64:$LD_LIBRARY_PATH
+
+#-------------------------
+# Install SPM12 Standalone
+#-------------------------
+USER root
+ENV SPM_REVISION=r6906
+ENV SPM_EXEC=/opt/spm12/spm12 \
+    SPMMCRCMD='/opt/spm12/run_spm12.sh /opt/mcr/v91/ script' \
+    FORCE_SPMMCR=1
+RUN wget -q -P /opt http://www.fil.ion.ucl.ac.uk/spm/download/restricted/bids/spm12_${SPM_REVISION}_Linux_${MATLAB_VERSION}.zip && \
+    unzip -q /opt/spm12_${SPM_REVISION}_Linux_${MATLAB_VERSION}.zip -d /opt && \
+    rm -f /opt/spm12_${SPM_REVISION}_Linux_${MATLAB_VERSION}.zip && \
+    ${SPM_EXEC} function exit
+
+# Make the spm12_run.sh script executable for NB_USER
+RUN chown -R $NB_USER:users /opt/spm12
+
+---------------------------------
+fin depuis
+
+
+
+
+
+
+spm standalone
+
+/run_spm12.sh /homes_unix/hirsch/essai_spm_stand_alone/mcr/v91
+/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh /homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91
+
+pour afni
+code pierre yves
+    # Node: func2.afniBandpass     afniBandpass = Node(Bandpass(), name="afniBandpass")     afniBandpass.plugin_args = {'qsub_args':'-l h_vmem=30G -l walltime=02:00:00',                                 'sbatch_args':'--mem-per-cpu 30000'}     afniBandpass.inputs.automask = False     afniBandpass.inputs.environ = {}     afniBandpass.inputs.highpass = hpass     afniBandpass.inputs.ignore_exception = False     afniBandpass.inputs.lowpass = lpass     afniBandpass.inputs.outputtype = 'NIFTI_GZ'     afniBandpass.inputs.terminal_output = 'stream'
+
+pb du jeudi 
+
+la commande est la suivante:
+/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh /homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91 batch /tmp/tmp_UZ2fo/preproc/norm12/pyscript_normalize12.m
+
+la commande delancement est la bonne mais, erreur sur ?
+/tmp/tmp_UZ2fo/preproc/norm12/pyscript_normalize12.m
+
+File:pm_jobman
+Name:load_single_job
+Line:99
+File:fg_load_jobs
+Name:cfg_util
+Line:77
+File:enuFileLoad_Callback
+Name:gui_mainfcn
+Line:99
+File:fg_ui
+Name:@(hObject,eventdata)cfg_ui('MenuFileLoad_Callback',hObject,eventdata,guidata(hObject))
+Line:461
+File:÷
+Name:6
+Line:27
+File:˼
+Name:ɣ
+Line:95No matlabbatch job found in '/tmp/tmp_UZ2fo/preproc/norm12/pyscript_normalize12.m'
+
+File:5
+Name: 
+Line:
+
+-------------------------------------------------
+mardi 14 mars ARIMA
+
+je lis le fichier
+/homes_unix/hirsch/_pypipe/datadir/data_results/functionnal/wcrat0009_epi_s04_d0001_merged_bp.nii.gz
+
+-----------------------------------------------
+mercredi 15 mars
+
+w sur le fichier othogonalyse de afni band pass
+
+6 premieres colonnes c le fichier rp_at0009_epi_s04_d0001.txt cad
+
+---------------------------------------------
+jeudi 16 mars
+
+d'abord j'essaye de normaliser les cartes de wm et lcf sorties de segment
+-> PB message d'erreur est le suivant:
+RuntimeError: Command:
+/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh /homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91 batch /tmp/tmpuqQP5I/preproc/norm12bis/pyscript_normalize12.m
+
+
+PM path: /homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/spm12_mcr/spm12/spm.m
+Item 'Images to Write', field 'val': Number of matching files (0) less than required (1).
+Item write: No field(s) named
+eoptions
+Item 'Images to Write', field 'val': Number of matching files (0) less than required (1).
+Item write: No field(s) named
+eoptions
+Execution failed: /tmp/tmpuqQP5I/preproc/norm12bis/pyscript_normalize12.mBye for now... 
+
+prparation des 25 -ième et 26-ième colonnes avec signal moyen de wm et lcf avec meants
+    
+# Node: func2.wmTs     
+wmTs = Node(ImageMeants(), name="wmTs")     
+wmTs.plugin_args = {'qsub_args':'-l h_vmem=30G', 'sbatch_args':'--mem-per-cpu 30000'}     
+wmTs.inputs.ignore_exception = False     
+wmTs.inputs.order = 1     
+wmTs.inputs.output_type = 'NIFTI_GZ'     
+wmTs.inputs.terminal_output = 'stream'     
+func2.connect(onePassMerge, "merged_file", wmTs, "in_file")     
+func2.connect(inputNode, "wmMask", wmTs, "mask")
+
+
