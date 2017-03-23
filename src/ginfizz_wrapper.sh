@@ -1,19 +1,18 @@
 #!/bin/bash
 
 # env var for dev machine
-MCRROOT=/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91
-SPMSAROOT=/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh
-CODEROOT=/homes_unix/hirsch/ginfizz/src
-DATAROOT=/scratch/user/hirsch/datadirp
+# MCRROOT=/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91
+# SPMSAROOT=/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh
+# CODEROOT=/homes_unix/hirsch/ginfizz/src
+# DATAROOT=/scratch/user/hirsch/datadirp
 
 # env var for docker machines, for VIP
-# MCRROOT=/opt/mcrbis/v90
-# MCRROOTBIS=/opt/mcr/v91
-# SPMSAROOT=/opt/spm/spm12
-# CODEROOT=/rstp_code
-# DATAROOT=/rstp_data
+MCRROOT=/opt/mcr/v91/
+SPMSAROOT=/opt/spm12/run_spm12.sh
+CODEROOT=/rstp_code
+DATAROOT=/rstp_data
 
-info "Start running ginfizz wrapper"
+
 
 function die {
     local D=`date`
@@ -30,6 +29,8 @@ if [ $# != 2 ]
 then
     die "usage: $0 <input_tgz>  <output_dir>"
 fi
+
+info "Start running ginfizz wrapper"
 
 INPUTFILE=$1
 OUTPUTDIR=$2
@@ -125,11 +126,14 @@ info "1 - python preprocess sent") &&
   pwd;
   ls ;
   # and copy the logs file to the outputdir
+  # todo mise au point du logging plus des exceptions au debut on fait un >> pour catcher la sortie std, eterror
+  # qu on met dans coderoot
   ls -l ${CODEROOT}/*.log
   cp ${CODEROOT}/*.log ${OUTPUTDIR};
+
   info  "we are sending the tar fct for the following repository"
   
   tar czf ${OUTPUTDIR}/data_results.tar.gz   ${RESULTSDIR} ;
   info "4 eval has been sent we get the results in a tarball we give the tarball to VIP";)
 
-info "End running ginfizz wrapper"
+info "End running ginfizz wrapper";

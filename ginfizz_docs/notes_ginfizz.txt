@@ -8,11 +8,10 @@ docker pull miykael/nipype_level5
 
 ----------------------
 puis docker
-docker build  -t thomashirsch/docker-ginfizz:v101 .
 
 docker run --rm -it -v /scratch/user/hirsch/datadir/data_set.tar.gz:/rstp_data/data_set.tar.gz -v /scratch/user/hirsch/datadirdocker:/outputdir  thomashirsch/docker-ginfizz:v101
 puis, dans le container
-/rstp_code/ginfizz_wrapper.sh /rstp_data/data_set.tar.gz /outputdir
+/rstp_code/ginfizz_wrapper.sh /rstp_data/data_set.tar.gz /outputdir   >>  /rstp_code/ginfizz.log
 
 
 
