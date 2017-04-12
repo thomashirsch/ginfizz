@@ -163,16 +163,6 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
 
 # ## 1 - we decode the xml file
 
-# In[5]:
-
-#flibasedir = '/scratch/user/hirsch/datadir/data_set/t0009/repos01'
-#resultdir = '/scratch/user/hirsch/datadir/data_results'
-
-
-# In[6]:
-
-
-# In[7]:
 
     xmlfile = getXmlFile(flibasedir)
 
@@ -219,7 +209,7 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     # In[14]:
     #os.path.join(dir_name, base_filename + suffix)
 
-    epidir = getEpiInfos(xmlfile)['epidir']
+    epidir = epiResults['epidir']
     
     abs_epidir = os.path.join(flibasedir, epidir)
     abs_t1 = os.path.join(flibasedir, t1)
@@ -273,28 +263,48 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
         import nibabel as nib     
         import os 
         
-        i1=nib.load(gm_img)         
+        img1 = gm_img
+        img2 = wm_img
+        img3 = mean_img
+        
+        i1=nib.load(img1)         
         i1array=np.asarray(i1.dataobj).copy() # Avoid caching the proxy image
-        
-        i2=nib.load(wm_img)         
+    
+        i2=nib.load(img2)         
         i2array=np.asarray(i2.dataobj).copy()
-        
-        i3=nib.load(mean_img)         
+        hdr2 = i2.header
+    
+        i3=nib.load(img3)         
         i3array=np.asarray(i3.dataobj).copy()
         hdr3 = i3.header
-        
+    
+        print(hdr2.get_data_dtype())
+        print(hdr3.get_data_dtype())
+    
         gi = i1array + i2array
         # threshold image gm + wm at 0.2
-        gi[gi < 0.2] = 0
+        gi[(10 * gi )< 2] = 0
         # binary mask the resulting image
-        gi[gi > 0.0] = 1
+        gi[gi > 0] = 1
+    
+        struct_image = i3
+    
+        hdr_struct = struct_image.header
+        print(hdr_struct.get_data_dtype())
+    
+        print"apres"
         
+        print(hdr_struct.get_data_dtype())
+    
         # apply the binary mask to the bias corrected T1
         struct_image_array = np.multiply(gi, i3array)
-        
+   
+        hdr3.set_data_dtype(np.int16)
+    
         # crate the resulting image
-        struct_image = nib.Nifti1Image(struct_image_array, np.eye(4))
+        struct_image = nib.Nifti1Image(struct_image_array.astype(np.int16), i3.affine, i3.header)
         
+        # save the image to disk
         out_file = os.path.join(os.getcwd(), 'struct_image.nii')
         nib.save(struct_image, out_file)
             
@@ -369,8 +379,9 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     realign.inputs.fwhm = 5
     realign.inputs.interp = 2
     realign.inputs.wrap = [0, 0, 0]
-    # essai au defaut 2, 1 realign.inputs.write_which = [0, 1]
+    # essai au defaut 2, 1 realign.inputs.write_which = [0, 1] je reviens au 2 1 pour dumper
     realign.inputs.write_which = [2, 1]
+    realign.inputs.write_mask = True
     realign.inputs.write_interp = 4
     realign.inputs.wrap = [0, 0, 0]
     realign.inputs.write_mask = True
@@ -397,9 +408,14 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     coregister.inputs.write_mask = False 
     coregister.inputs.out_prefix = 'c'
     coregister.inputs.jobtype = 'estwrite'
-
-    preproc.connect(computeStructuralImage,"out_file" ,coregister, 'source')
-    preproc.connect(realign,"mean_image" ,coregister, 'target')
+    
+    # try  to invert better
+    # preproc.connect(computeStructuralImage,"out_file" ,coregister, 'target')
+    
+    preproc.connect(computeStructuralImage,"out_file" ,coregister, 'target')
+    
+    preproc.connect(realign,"mean_image" ,coregister, 'source')    
+    
     preproc.connect(realign,"realigned_files" ,coregister, 'apply_to_files')
 
 
@@ -480,7 +496,7 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     # realign mean_image and realignment_parameters
     preproc.connect(realign,  'mean_image', datasink, 'functionnal.@par')
     preproc.connect(realign,  'realignment_parameters', datasink, 'functionnal.@par1')
-    preproc.connect(realign,  'realigned_files', datasink, 'functionnal.@par2')
+    preproc.connect(realign,  'realigned_files', datasink, 'functionnal.realigned_files')
 
     preproc.connect(coregister,  'coregistered_files', datasink, 'functionnal.@par3')
 
@@ -491,6 +507,9 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     # In[25]:
 
     preproc.run()
+
+    # visualisation workflow
+    preproc.write_graph(graph2use='colored', format='svg', simple_form=True)
 
     return
     # The end

@@ -1,21 +1,17 @@
 
-FROM miykael/nipype_level5
+FROM miykael/nipype_level2
 
 
 RUN echo "--- START   ----------"
 
-# on monte un volume /rstp_data pour récupérer détarer le dataset et un autre pour mettre le code
+# 30 mars hackfest on monte une directory /rstp_data pour récupérer détarer le dataset et un autre pour mettre le code
 
-VOLUME /rstp_data
+RUN mkdir /rstp_data
 
-VOLUME /rstp_code
-
-ENV DATAROOT=/rstp_data
-
-ENV CODEROOT=/rstp_code
+RUN mkdir /rstp_code
 
 COPY ./ginfizz_wrapper.sh  /rstp_code/ginfizz_wrapper.sh
-RUN   /bin/chmod 777  /rstp_code/ginfizz_wrapper.sh
+RUN   chmod 777  /rstp_code/ginfizz_wrapper.sh
 
 # on va recuperer le pipeline de preprocess en python
 
