@@ -428,8 +428,8 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
 
     norm12.inputs.bias_regularization = 0.0001
     norm12.inputs.bias_fwhm = 60
-    # todo putthis parameter in args of a fct
-    # norm12.inputs.tpm = '/homes_unix/hirsch/_pypipe/datadir/data_set/t0009/repos01/Atlases/TPM.nii'
+    
+    norm12.inputs.tpm = atlasfile
     norm12.inputs.affine_regularization_type = 'mni'
     norm12.inputs.sampling_distance = 3.0
     norm12.inputs.write_bounding_box = [[-90.0, -126.0, -72.0],[ 90.0, 90.0, 108.0]]
@@ -437,6 +437,11 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     norm12.inputs.write_interp = 4 
     norm12.inputs.jobtype = 'estwrite'
     norm12.inputs.use_v8struct = True
+    
+    # reg = [0 0.001 0.5 0.05 0.2];
+    norm12.inputs.warping_regularization = [0.0, 0.001, 0.5, 0.05, 0.2]
+    # fwhm = 0;  i don t known how this parameter is called in nipype 
+    
     #norm12.inputs.out_prefix = 'w'
 
     preproc.connect(segment,'bias_corrected_images' ,norm12, 'image_to_align')
@@ -450,8 +455,8 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
 
     norm12bis.inputs.bias_regularization = 0.0001
     norm12bis.inputs.bias_fwhm = 60
-    # todo putthis parameter in args of a fct
-    # norm12.inputs.tpm = '/homes_unix/hirsch/_pypipe/datadir/data_set/t0009/repos01/Atlases/TPM.nii'
+    
+    norm12bis.inputs.tpm = atlasfile
     norm12bis.inputs.affine_regularization_type = 'mni'
     norm12bis.inputs.sampling_distance = 3.0
     norm12bis.inputs.write_bounding_box = [[-90.0, -126.0, -72.0],[ 90.0, 90.0, 108.0]]
@@ -459,7 +464,10 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     norm12bis.inputs.write_interp = 4 
     norm12bis.inputs.jobtype = 'estwrite'
     norm12bis.inputs.use_v8struct = True
-    #norm12bis.inputs.out_prefix = 'w'
+    
+    # reg = [0 0.001 0.5 0.05 0.2];
+    norm12bis.inputs.warping_regularization = [0.0, 0.001, 0.5, 0.05, 0.2]
+    # fwhm = 0;  i don t known how this parameter is called in nipype 
 
     # rajout de normalisation des tissus
     preproc.connect(segment,'bias_corrected_images' ,norm12bis, 'image_to_align')
@@ -474,34 +482,34 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
 
     # segment results
     preproc.connect(segment,  'normalized_class_images', datasink, 'structural')
-    preproc.connect(segment,  'bias_corrected_images' , datasink, 'structural.@par')
-    preproc.connect(segment,  'bias_field_images' , datasink, 'structural.@par1')
-    preproc.connect(segment,  'forward_deformation_field' , datasink, 'structural.@par2')
-    preproc.connect(segment,  'inverse_deformation_field' , datasink, 'structural.@par3')
+    preproc.connect(segment,  'bias_corrected_images' , datasink, 'structural.bias_corrected_images')
+    preproc.connect(segment,  'bias_field_images' , datasink, 'structural.bias_field_images')
+    preproc.connect(segment,  'forward_deformation_field' , datasink, 'structural.forward_deformation_field')
+    preproc.connect(segment,  'inverse_deformation_field' , datasink, 'structural.inverse_deformation_field')
     preproc.connect(segment,  'modulated_class_images' , datasink, 'structural.mod_class')
     preproc.connect(segment,  'native_class_images' , datasink, 'structural.native_class')
-    preproc.connect(segment,  'transformation_mat' , datasink, 'structural.@par6')
-    preproc.connect(segment,  'dartel_input_images' , datasink, 'structural.@par7')
+    preproc.connect(segment,  'transformation_mat' , datasink, 'structural.transformation_mat')
+    preproc.connect(segment,  'dartel_input_images' , datasink, 'structural.dartel_input_images')
 
     # compute image preproc.connect(computeStructuralImage,"out_file" ,coregister, 'source')
     preproc.connect(computeStructuralImage,"out_file", datasink, 'structural.t1_masked_files')
 
     # rajout de normalisation des tissues
-    preproc.connect(norm12bis,  'normalized_files', datasink, 'structural.norm_files')
-    preproc.connect(norm12bis,  'normalized_image', datasink, 'structural.norm_image')
+    preproc.connect(norm12bis,  'normalized_files', datasink, 'structural.normalized_files')
+    preproc.connect(norm12bis,  'normalized_image', datasink, 'structural.normalized_image')
 
     # slice timing results
     preproc.connect(st,  'timecorrected_files', datasink, 'functionnal')
 
     # realign mean_image and realignment_parameters
-    preproc.connect(realign,  'mean_image', datasink, 'functionnal.@par')
-    preproc.connect(realign,  'realignment_parameters', datasink, 'functionnal.@par1')
+    preproc.connect(realign,  'mean_image', datasink, 'functionnal.mean_image')
+    preproc.connect(realign,  'realignment_parameters', datasink, 'functionnal.realignment_parameters')
     preproc.connect(realign,  'realigned_files', datasink, 'functionnal.realigned_files')
 
-    preproc.connect(coregister,  'coregistered_files', datasink, 'functionnal.@par3')
+    preproc.connect(coregister,  'coregistered_files', datasink, 'functionnal.coregistered_files')
 
-    preproc.connect(norm12,  'normalized_files', datasink, 'functionnal.norm_files')
-    preproc.connect(norm12,  'normalized_image', datasink, 'functionnal.norm_image')
+    preproc.connect(norm12,  'normalized_files', datasink, 'functionnal.normalized_files')
+    preproc.connect(norm12,  'normalized_image', datasink, 'functionnal.normalized_image')
 
 
     # In[25]:
