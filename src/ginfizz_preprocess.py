@@ -1,8 +1,6 @@
 #!/usr/bin/env python 
 # -*- coding: utf-8 -*-
 
-# plus slice timing + 16 mars normalisation des images structurelles segmentees en tissus
-# premier notebook avec nouvelle version de marc spm
 
 
 ##---------------------------------------------------------------------------------------
@@ -123,7 +121,7 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
 
 # ## preliminaries
 
-# In[1]:
+
 
     import nipype.interfaces.io as nio           # Data i/o
     import nipype.interfaces.spm as spm          # spm
@@ -135,13 +133,7 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     import os                                    # system functions
 
 
-    # In[2]:
-
-    #spm_standalone='/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh'
-    #mcr='/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91'
-
-
-    # In[3]:
+    
 
     from nipype.interfaces import spm
 
@@ -152,7 +144,6 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
 
     # ## Nipype verbosity
 
-    # In[4]:
 
     import nipype
     # Optional: Use the following lines to increase verbosity of output
@@ -177,21 +168,13 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     root = tree.getroot()
 
 
-    # In[9]:
-
     print root.tag
 
-    # In[10]:
 
     epiResults = getEpiInfos(xmlfile)
     print epiResults
 
 
-    # In[11]:
-
-
-
-    # In[12]:
 
     t1 = getT1file(xmlfile)
     print t1
@@ -199,14 +182,12 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
 
     # # Start Pileline -> declaration
 
-    # In[13]:
 
     preproc = pe.Workflow(name='preproc')
 
 
     # ## 1 - first node data grabbing by select files 
 
-    # In[14]:
     #os.path.join(dir_name, base_filename + suffix)
 
     epidir = epiResults['epidir']
@@ -225,7 +206,6 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
 
     # ## 2 - segment T1
 
-    # In[15]:
 
     segment = pe.Node(interface=spm.NewSegment(), name='segment')
 
@@ -250,65 +230,65 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
 
 # ## 2 bis - image calculator
 
-# In[16]:
 
-    def computeStructuralImage(gm_img, wm_img, mean_img):
-        ''' 
-        takes 3 images arguments: grey matter, white matter, and bias corrected T1 img.
-        compute a binary mask with gm and wm thresholded at 0.2 combined with the mean image coming out of segment.
-        used to realigne properly the EPI imgs. 
-        '''
 
-        import numpy as np     
-        import nibabel as nib     
-        import os 
+    # def computeStructuralImage(gm_img, wm_img, mean_img):
+    #     ''' 
+    #     takes 3 images arguments: grey matter, white matter, and bias corrected T1 img.
+    #     compute a binary mask with gm and wm thresholded at 0.2 combined with the mean image coming out of segment.
+    #     used to realigne properly the EPI imgs. 
+    #     '''
+
+    #     import numpy as np     
+    #     import nibabel as nib     
+    #     import os 
         
-        img1 = gm_img
-        img2 = wm_img
-        img3 = mean_img
+    #     img1 = gm_img
+    #     img2 = wm_img
+    #     img3 = mean_img
         
-        i1=nib.load(img1)         
-        i1array=np.asarray(i1.dataobj).copy() # Avoid caching the proxy image
+    #     i1=nib.load(img1)         
+    #     i1array=np.asarray(i1.dataobj).copy() # Avoid caching the proxy image
     
-        i2=nib.load(img2)         
-        i2array=np.asarray(i2.dataobj).copy()
-        hdr2 = i2.header
+    #     i2=nib.load(img2)         
+    #     i2array=np.asarray(i2.dataobj).copy()
+    #     hdr2 = i2.header
     
-        i3=nib.load(img3)         
-        i3array=np.asarray(i3.dataobj).copy()
-        hdr3 = i3.header
+    #     i3=nib.load(img3)         
+    #     i3array=np.asarray(i3.dataobj).copy()
+    #     hdr3 = i3.header
     
-        print(hdr2.get_data_dtype())
-        print(hdr3.get_data_dtype())
+    #     print(hdr2.get_data_dtype())
+    #     print(hdr3.get_data_dtype())
     
-        gi = i1array + i2array
-        # threshold image gm + wm at 0.2
-        gi[(10 * gi )< 2] = 0
-        # binary mask the resulting image
-        gi[gi > 0] = 1
+    #     gi = i1array + i2array
+    #     # threshold image gm + wm at 0.2
+    #     gi[(10 * gi )< 2] = 0
+    #     # binary mask the resulting image
+    #     gi[gi > 0] = 1
     
-        struct_image = i3
+    #     struct_image = i3
     
-        hdr_struct = struct_image.header
-        print(hdr_struct.get_data_dtype())
+    #     hdr_struct = struct_image.header
+    #     print(hdr_struct.get_data_dtype())
     
-        print"apres"
+    #     print"apres"
         
-        print(hdr_struct.get_data_dtype())
+    #     print(hdr_struct.get_data_dtype())
     
-        # apply the binary mask to the bias corrected T1
-        struct_image_array = np.multiply(gi, i3array)
+    #     # apply the binary mask to the bias corrected T1
+    #     struct_image_array = np.multiply(gi, i3array)
    
-        hdr3.set_data_dtype(np.int16)
+    #     hdr3.set_data_dtype(np.int16)
     
-        # crate the resulting image
-        struct_image = nib.Nifti1Image(struct_image_array.astype(np.int16), i3.affine, i3.header)
+    #     # crate the resulting image
+    #     struct_image = nib.Nifti1Image(struct_image_array.astype(np.int16), i3.affine, i3.header)
         
-        # save the image to disk
-        out_file = os.path.join(os.getcwd(), 'struct_image.nii')
-        nib.save(struct_image, out_file)
+    #     # save the image to disk
+    #     out_file = os.path.join(os.getcwd(), 'struct_image.nii')
+    #     nib.save(struct_image, out_file)
             
-        return out_file
+    #     return out_file
 
     def regexfilter(files_list,patern):
         import re
@@ -321,26 +301,69 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     
     
 
-    # In[17]:
+    # # In[17]:
 
-    from nipype.interfaces.utility import Function, IdentityInterface
+    # from nipype.interfaces.utility import Function, IdentityInterface
 
-    computeStructuralImage = Node(Function(input_names=['gm_img', 'wm_img', 'mean_img'],
-                                    output_names=['out_file'],
-                                    function=computeStructuralImage),
-                                    name='computeStructuralImage')
+    # computeStructuralImage = Node(Function(input_names=['gm_img', 'wm_img', 'mean_img'],
+    #                                 output_names=['out_file'],
+    #                                 function=computeStructuralImage),
+    #                                 name='computeStructuralImage')
 
-    # 2 bis - image calculator -> to ger a nice structurak images to get good registration results
-    # input_names=['gm_img', 'wm_img', 'bias_corrected_img'],
-    preproc.connect(segment, ('native_class_images', regexfilter,r'.*c1.*.nii') ,computeStructuralImage, 'gm_img')
-    preproc.connect(segment, ('native_class_images', regexfilter,r'.*c2.*.nii') ,computeStructuralImage, 'wm_img')
-    # todo retrouver eventuellement la mean image je ne sais pas pourquoi elle n est pas produite par segment
-    preproc.connect(filesource,"T1" ,computeStructuralImage, 'mean_img')
+    # # 2 bis - image calculator -> to ger a nice structurak images to get good registration results
+    # # input_names=['gm_img', 'wm_img', 'bias_corrected_img'],
+    # preproc.connect(segment, ('native_class_images', regexfilter,r'.*c1.*.nii') ,computeStructuralImage, 'gm_img')
+    # preproc.connect(segment, ('native_class_images', regexfilter,r'.*c2.*.nii') ,computeStructuralImage, 'wm_img')
+    # # todo retrouver eventuellement la mean image je ne sais pas pourquoi elle n est pas produite par segment
+    # preproc.connect(filesource,"T1" ,computeStructuralImage, 'mean_img')
+
+    # new image calculator with fslmaths
+
+    from nipype.interfaces.fsl import MultiImageMaths
+
+    addFiles = pe.Node(interface=MultiImageMaths(), name='addFiles')
+    
+    addFiles.inputs.op_string = "-add %s"   
+    addFiles.inputs.output_datatype = 'short'
+    addFiles.inputs.ignore_exception = False     
+    addFiles.inputs.output_type = 'NIFTI'     
+    addFiles.inputs.terminal_output = 'stream'     
+
+    preproc.connect(segment, ('native_class_images', regexfilter,r'.*c1.*.nii'), addFiles, "in_file")
+    preproc.connect(segment, ('native_class_images', regexfilter,r'.*c2.*.nii') , addFiles, "operand_files")
+
+    from nipype.interfaces.fsl import Threshold
+
+    thrFile = pe.Node(interface=Threshold(), name='thrFile')
+          
+    thrFile.inputs.thresh = 0.2   
+    thrFile.inputs.ignore_exception = False     
+    thrFile.inputs.output_type = 'NIFTI'     
+    thrFile.inputs.terminal_output = 'stream'     
+
+    preproc.connect(addFiles,"out_file" , thrFile, "in_file")
+
+
+
+    from nipype.interfaces.fsl import ApplyMask
+
+    maskFiles = pe.Node(interface=ApplyMask(), name='maskFiles')
+      
+    maskFiles.inputs.ignore_exception = False     
+    maskFiles.inputs.output_type = 'NIFTI'     
+    maskFiles.inputs.terminal_output = 'stream' 
+    maskFiles.inputs.output_datatype ='short'
+
+    preproc.connect(segment,  'bias_corrected_images' , maskFiles, "in_file")
+    preproc.connect(thrFile,"out_file" , maskFiles, "mask_file")
+
+
+
 
 
     # ## 3 - slice timing of epibold images
 
-    # In[18]:
+  
 
     l = epiResults['sliceTimingVector'].split()
     lint =[]
@@ -349,7 +372,6 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     print lint
 
 
-    # In[19]:
 
     from nipype.interfaces.spm import SliceTiming
 
@@ -369,7 +391,6 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
 
     # ## 4 - realign of epibold images
 
-    # In[20]:
 
     realign = pe.Node(interface=spm.Realign(), name='realign')
 
@@ -393,9 +414,6 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
 
     # ## 5 - Coregistration
 
-    # In[21]:
-
-    # spm.Coregister()
     coregister = pe.Node(interface=spm.Coregister(), name='coregister' )
 
     coregister.inputs.cost_function = 'nmi'
@@ -412,10 +430,8 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     # try  to invert better
     # preproc.connect(computeStructuralImage,"out_file" ,coregister, 'target')
     
-    preproc.connect(computeStructuralImage,"out_file" ,coregister, 'target')
-    
+    preproc.connect(maskFiles,"out_file" ,coregister, 'target')  
     preproc.connect(realign,"mean_image" ,coregister, 'source')    
-    
     preproc.connect(realign,"realigned_files" ,coregister, 'apply_to_files')
 
 
@@ -447,8 +463,6 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     preproc.connect(segment,'bias_corrected_images' ,norm12, 'image_to_align')
     preproc.connect(coregister,"coregistered_files" ,norm12, 'apply_to_files')
 
-
-    # In[23]:
 
     # deuxieme normalisation pour normaliser les masks wm et lcf
     norm12bis = pe.Node(interface=spm.Normalize12(), name='norm12bis')
@@ -492,7 +506,7 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     preproc.connect(segment,  'dartel_input_images' , datasink, 'structural.dartel_input_images')
 
     # compute image preproc.connect(computeStructuralImage,"out_file" ,coregister, 'source')
-    preproc.connect(computeStructuralImage,"out_file", datasink, 'structural.t1_masked_files')
+    preproc.connect(maskFiles, "out_file", datasink, 'structural.t1_masked_files')
 
     # rajout de normalisation des tissues
     preproc.connect(norm12bis,  'normalized_files', datasink, 'structural.normalized_files')
