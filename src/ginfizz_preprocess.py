@@ -184,6 +184,10 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
 
 
     preproc = pe.Workflow(name='preproc')
+    
+    # 0 - we fix the working dir to get the commands later
+    
+    preproc.base_dir = os.path.join(resultdir, "_report")
 
 
     # ## 1 - first node data grabbing by select files 
@@ -519,8 +523,10 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     preproc.connect(realign,  'mean_image', datasink, 'functionnal.mean_image')
     preproc.connect(realign,  'realignment_parameters', datasink, 'functionnal.realignment_parameters')
     preproc.connect(realign,  'realigned_files', datasink, 'functionnal.realigned_files')
-
+    
+    # coregistration forgot coregistered_source
     preproc.connect(coregister,  'coregistered_files', datasink, 'functionnal.coregistered_files')
+    preproc.connect(coregister,  'coregistered_source', datasink, 'functionnal.coregistered_source')
 
     preproc.connect(norm12,  'normalized_files', datasink, 'functionnal.normalized_files')
     preproc.connect(norm12,  'normalized_image', datasink, 'functionnal.normalized_image')
