@@ -25,7 +25,25 @@
 #
 #     Start of bandpass pipeline
 
-def bandpass(sourcedir, sourcemergeddir, funcdir, resultdir):
+def bandpass(resultdir, hpass, lpass, acqNb):
+    '''
+    Description:
+        the  functional bandpass pipeline
+            - plots mocoVariables
+            - computes regressors
+            - FSL merges normalized_files
+            - AFNI 3D bandpass merged_file
+    
+    Inputs:
+        - resultdir: the results directory
+        - hight pass
+        - low pass
+        - functionnal images acquisition number
+        
+    Outputs:
+        - functionnal bandpassed signal time courses
+
+    '''    
 
     import nipype.interfaces.io as nio           # Data i/o
     import nipype.interfaces.spm as spm          # spm
@@ -38,6 +56,7 @@ def bandpass(sourcedir, sourcemergeddir, funcdir, resultdir):
     from nipype.interfaces.fsl.maths import MathsCommand
     from nipype.interfaces.fsl.utils import PlotMotionParams   # to plot moco variables
     
+    print hpass, lpass
     
     # creation of a subworflow to calculate the bandpass parameters
     prebandpass = pe.Workflow(name='prebandpass')
@@ -45,28 +64,61 @@ def bandpass(sourcedir, sourcemergeddir, funcdir, resultdir):
     # 0 - we fix the working dir to get the commands later
     import os
     prebandpass.base_dir = os.path.join(resultdir, "_report")    
+    
+    # ## logging management 
+
+    from nipype import config
+    cfg = dict(logging=dict(workflow_level = 'DEBUG'),
+               execution={'stop_on_first_crash': False,
+                          'hash_method': 'content'})
+    config.update_config(cfg)
+    prebandpass.config['execution'] = {'stop_on_first_rerun': 'True',
+                                        'hash_method': 'timestamp'}
+
+    # create logging dir under resultdir os.path.join('dir','other-dir') os.makedirs(newpath)
+    import os
+    logsdir = os.path.join(resultdir, 'logs')
+    
+    from nipype import config, logging
+    config.update_config({'logging': {'log_directory': logsdir,
+                                      'log_to_file': True }})
+    logging.update_logging(config)
+
+    from nipype import logging
+    iflogger = logging.getLogger('interface')
+    message = "Start of bandpass workflow"
+    iflogger.info(message)   
 
 
     # todo remplace this node by an identity node that get input from preprocess pipeline / node 7 eg. fsl merge
     # input node get the good files first the tissues normalised files
-    # the files to merge arein /scratch/user/hirsch/datadir/data_results/functionnal
+    # the files to merge are in /scratch/user/hirsch/datadir/data_results/functionnal
     #sourcedir = '/scratch/user/hirsch/datadir4/data_results_py/structural/normalized_files'
     # second the merged functionnal file
     #sourcemergeddir = '//scratch/user/hirsch/datadir4/data_results_py/functionnal/normalized_files'
     #funcdir = '/scratch/user/hirsch/datadir4/data_results_py/functionnal/realignment_parameters'
 
+    from nipype import Node
 
-    from nipype import SelectFiles, Node
-    templates = dict(wmMask=sourcedir+ "/" + "wc2*.nii",
-                     csfMask=sourcedir+ "/" + "wc3*.nii",
-                     filesToMerge=sourcemergeddir + "/" + "wcra*.nii",
-                     mocoVariables=funcdir+ "/" + "rp*.txt")
+    # intput node
+    field_list=['normalized_masks', 
+                'filesToMerge',
+                'mocoVariables']
+
+
+    inputNode = Node(IdentityInterface(fields=field_list), name="inputNode")
+
+
+    # to erase this just for memory while transforming code
+    #templates = dict(wmMask=sourcedir+ "/" + "wc2*.nii",
+                     #csfMask=sourcedir+ "/" + "wc3*.nii",
+                     #filesToMerge=sourcemergeddir + "/" + "wcra*.nii",
+                     #mocoVariables=funcdir+ "/" + "rp*.txt")
     
-    filesource = Node(SelectFiles(templates), "filesource")
-    filesource.inputs.subject_id = "subj1"
-    filesource.outputs.get()
-    hpass =  0.01
-    lpass = 0.1
+    #filesource = Node(SelectFiles(templates), "filesource")
+    #filesource.inputs.subject_id = "subj1"
+    #filesource.outputs.get()
+
 
 
     # ## 1 - compute moco file to feed with ortho.txt file the bandpass node of preprocess workflow 
@@ -76,7 +128,7 @@ def bandpass(sourcedir, sourcemergeddir, funcdir, resultdir):
     #x(t0) = x(t1)
     # todo get acqnb from previous pipeline
     
-    acqNb = 240
+    
 
 
     # ## Node 1 - compute moco
@@ -154,7 +206,7 @@ def bandpass(sourcedir, sourcemergeddir, funcdir, resultdir):
     
     
     
-    prebandpass.connect(filesource, "mocoVariables", computeMoco, "mocoFile")
+    prebandpass.connect(inputNode, "mocoVariables", computeMoco, "mocoFile")
 
 
     # ##  2 - Moco plots
@@ -168,7 +220,7 @@ def bandpass(sourcedir, sourcemergeddir, funcdir, resultdir):
     MotionCorrectionPlot1.inputs.plot_size = (500, 1000)     
     MotionCorrectionPlot1.inputs.plot_type = 'rotations'     
     MotionCorrectionPlot1.inputs.terminal_output = 'stream'     
-    prebandpass.connect(filesource, "mocoVariables", MotionCorrectionPlot1, "in_file")
+    prebandpass.connect(inputNode, "mocoVariables", MotionCorrectionPlot1, "in_file")
 
     
     # plot moco variables translations
@@ -179,7 +231,7 @@ def bandpass(sourcedir, sourcemergeddir, funcdir, resultdir):
     MotionCorrectionPlot2.inputs.plot_size = (500, 1000)     
     MotionCorrectionPlot2.inputs.plot_type = 'translations'     
     MotionCorrectionPlot2.inputs.terminal_output = 'stream'     
-    prebandpass.connect(filesource, "mocoVariables", MotionCorrectionPlot2, "in_file")
+    prebandpass.connect(inputNode, "mocoVariables", MotionCorrectionPlot2, "in_file")
 
 
     # plot moco variables displacement
@@ -190,12 +242,20 @@ def bandpass(sourcedir, sourcemergeddir, funcdir, resultdir):
     MotionCorrectionPlot3.inputs.plot_size = (500, 1000)     
     MotionCorrectionPlot3.inputs.plot_type = 'displacement'     
     MotionCorrectionPlot3.inputs.terminal_output = 'stream'     
-    prebandpass.connect(filesource, "mocoVariables", MotionCorrectionPlot3, "in_file")
+    prebandpass.connect(inputNode, "mocoVariables", MotionCorrectionPlot3, "in_file")
 
 
     # ## 3 - get wm and csf mask (normalised), erode them and calculate signal mean on both masks
     # (input from segment + normalyse wmMask = '/homes_unix/hirsch/_pypipe/datadir/data_results/structural/norm_files/wc2t0009_t1_s03.nii')
     # remark: erosion is done once; in connectomics, it is done 3 times
+    
+    def regexfilter(files_list,patern):
+        import re
+        
+        for f in files_list:
+            if re.search(patern, str(f)):
+                    res = f         
+        return res            
     
     # calculate eroded binary mask for wm
     from nipype.interfaces.fsl.maths import MathsCommand
@@ -204,20 +264,29 @@ def bandpass(sourcedir, sourcemergeddir, funcdir, resultdir):
         
     erosion.inputs.args = '-thr 0 -uthr 111 -bin -ero  '     
     erosion.inputs.ignore_exception = False     
-    erosion.inputs.output_type = 'NIFTI_GZ'     
+    erosion.inputs.output_type = 'NIFTI'     
     erosion.inputs.terminal_output = 'stream'     
-    prebandpass.connect(filesource,"wmMask" , erosion, "in_file")
+    prebandpass.connect(inputNode,('normalized_masks',regexfilter,r'wc2.*nii'), erosion, "in_file")
     
 
-    # calculate eroded binary mask for lcf
+    # calculate eroded binary mask for csf
+    
+    def regexfilter(files_list,patern):
+        import re
+        
+        for f in files_list:
+            if re.search(patern, str(f)):
+                    res = f         
+        return res             
     
     erosioncsf = pe.Node(interface=MathsCommand(), name='erosioncsf')
+           
         
     erosioncsf.inputs.args = '-thr 0 -uthr 111 -bin -ero '     
     erosioncsf.inputs.ignore_exception = False     
-    erosioncsf.inputs.output_type = 'NIFTI_GZ'     
+    erosioncsf.inputs.output_type = 'NIFTI'     
     erosioncsf.inputs.terminal_output = 'stream'     
-    prebandpass.connect(filesource,"csfMask" , erosioncsf, "in_file")
+    prebandpass.connect(inputNode,('normalized_masks', regexfilter,r'wc3.*nii') , erosioncsf, "in_file")
     
     # lets merge the functionnal normalysed files with fsl merge
     
@@ -232,7 +301,7 @@ def bandpass(sourcedir, sourcemergeddir, funcdir, resultdir):
     fsl_merge.inputs.ignore_exception = False     
     #fsl_merge.inputs.sort = False
     
-    prebandpass.connect(filesource,  'filesToMerge', fsl_merge, 'in_files')
+    prebandpass.connect(inputNode,  'filesToMerge', fsl_merge, 'in_files')
 
     # lets calculate the mean signal on these eroded masks first on wm
     from nipype.interfaces.fsl.utils import ImageMeants
@@ -365,12 +434,9 @@ def bandpass(sourcedir, sourcemergeddir, funcdir, resultdir):
     prebandpass.connect(afniBandpass,  'out_file', datasink, 'functionnal.bandpassedFile')
 
     # the run
-    prebandpass.run()
+    #prebandpass.run()
     
-    return
+    prebandpass.write_graph(graph2use='colored', format='svg', simple_form=True)
+    
+    return prebandpass
 
-
-if __name__ == "__main__":
-    import sys 
-    print sys.argv
-    bandpass(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])

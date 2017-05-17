@@ -12,6 +12,10 @@
 
 # we get the xml file in this directory
 def getXmlFile(flibasedir):
+    '''
+    argument: flibasedir
+    output: XML file that describes inputs data
+    '''
     import os
     dirs = os.listdir( flibasedir )
     #print dirs
@@ -27,6 +31,10 @@ def getXmlFile(flibasedir):
 
 
 def getEpiInfos(xmlfile):
+    '''
+    argument: XML file
+    output: parameter of fMRI scanning
+    '''    
     result = {}
     try:
         import xml.etree.ElementTree as ET
@@ -35,11 +43,11 @@ def getEpiInfos(xmlfile):
         # epibold directory
         for epibold in root.iter('EPIBOLD'):
             for child in epibold:
-                print child.text
+                #print child.text
                 if child.tag == 'file':
                     epidir = child.text
                     result['epidir'] = epidir
-                    print epidir
+                    #print epidir
                     
                 # parameters
                 if child.tag == 'parameters':
@@ -52,7 +60,7 @@ def getEpiInfos(xmlfile):
                             for child3 in child2:
                                 if child3.tag == 'value':
                                     tr = child3.text
-                                    print tr
+                                    #print tr
                                     result['TR'] = tr
                     
                         # dynamics
@@ -78,12 +86,16 @@ def getEpiInfos(xmlfile):
                 
         
     except:
-        print 'exception'
+        print 'exception in reading fMRI parameters from XML file from user'
     return result
 
 
 
 def getT1file(xmlfile):
+    '''
+    argument: XML file
+    output: T1 file path
+    '''    
     try:
         import xml.etree.ElementTree as ET
         tree = ET.parse(xmlfile)
@@ -95,9 +107,9 @@ def getT1file(xmlfile):
                 if child.tag == 'file':
                     t1 = child.text
                     t1 = flibasedir + t1
-                    # print  t1
+                    print  t1
     except:
-        print 'exception'
+        print 'exception in T1 file retrieving'
     return t1
     
     
@@ -117,6 +129,25 @@ def getT1file(xmlfile):
 ##---------------------------------------------------------------------------------------
 
 def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
+    '''
+    Description:
+        the  functional preprocessing pipeline
+            - Slice timing
+            - Segmentation
+            - Realignement
+            - Coregistration 
+            - Normalization to NIM space
+    
+    Inputs:
+        - SMP and MCR paths
+        - flibasedir: the images dir
+        - atlasfile: the NMI atlas for Normalization
+        - resultdir: the results directory
+        
+    Outputs:
+        - the EPI scans parameters
+
+    '''
 
 
 # ## preliminaries
@@ -137,7 +168,6 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
 
     from nipype.interfaces import spm
 
-    # essai du mercredi soir matlab_cmd = ' '.join([spm_standalone,mcr,'batch','script'])
     matlab_cmd = ' '.join([spm_standalone,mcr,'batch'])
     spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
 
@@ -150,6 +180,8 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     nipype.config.set('logging', 'workflow_level',  'INFO')
     nipype.config.set('logging', 'interface_level', 'INFO')
     nipype.logging.update_logging(nipype.config)
+    
+
 
 
 # ## 1 - we decode the xml file
@@ -159,8 +191,6 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
 
     print xmlfile
 
-
-    # In[8]:
 
     # the we decode the xmlfile
     import xml.etree.ElementTree as ET
@@ -182,12 +212,40 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
 
     # # Start Pileline -> declaration
 
-
     preproc = pe.Workflow(name='preproc')
+    
+    # ## logging management 
+
+    from nipype import config
+    cfg = dict(logging=dict(workflow_level = 'DEBUG'),
+               execution={'stop_on_first_crash': False,
+                          'hash_method': 'content'})
+    config.update_config(cfg)
+    preproc.config['execution'] = {'stop_on_first_rerun': 'False',
+                                        'hash_method': 'timestamp'}
+    
+    # create logging dir under resultdir os.path.join('dir','other-dir') os.makedirs(newpath)
+    import os
+    logsdir = os.path.join(resultdir, 'logs')
+    try:
+        os.makedirs(logsdir)
+    except:
+        print "exception while creating logs directory"
+    
+    from nipype import config, logging
+    config.update_config({'logging': {'log_directory': logsdir,
+                                      'log_to_file': True }})
+    logging.update_logging(config)
+
+    from nipype import logging
+    iflogger = logging.getLogger('interface')
+    message = "Start of preprocess workflow"
+    iflogger.info(message)        
     
     # 0 - we fix the working dir to get the commands later
     
-    preproc.base_dir = os.path.join(resultdir, "_report")
+    working_dir =  os.path.join(resultdir, "_report")
+    preproc.base_dir = working_dir
 
 
     # ## 1 - first node data grabbing by select files 
@@ -216,7 +274,7 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     #seg.inputs.channel_files = 't0009_t1_s03.nii'
     segment.inputs.channel_info =(0.001,60.0,(True,True))          
     segment.inputs.sampling_distance= 3.0
-    # todo donner un chemin de TPM.nii comme argument de la future fct
+    
     tissue1 = ((atlasfile , 1), 1, (True,False), (False, False))
     tissue2 = ((atlasfile, 2), 1, (True,False), (False, False))
     tissue3 = ((atlasfile, 3), 2, (True,False), (False, False))
@@ -303,9 +361,7 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
         return res
 
     
-    
 
-    # # In[17]:
 
     # from nipype.interfaces.utility import Function, IdentityInterface
 
@@ -318,7 +374,7 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     # # input_names=['gm_img', 'wm_img', 'bias_corrected_img'],
     # preproc.connect(segment, ('native_class_images', regexfilter,r'.*c1.*.nii') ,computeStructuralImage, 'gm_img')
     # preproc.connect(segment, ('native_class_images', regexfilter,r'.*c2.*.nii') ,computeStructuralImage, 'wm_img')
-    # # todo retrouver eventuellement la mean image je ne sais pas pourquoi elle n est pas produite par segment
+    # 
     # preproc.connect(filesource,"T1" ,computeStructuralImage, 'mean_img')
 
     # new image calculator with fslmaths
@@ -384,7 +440,7 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     st.inputs.num_slices = int(epiResults['nb_slices'])
     st.inputs.time_repetition = float(epiResults['TR'])
     st.inputs.time_acquisition = float(epiResults['TR']) - float(epiResults['TR'])/float(epiResults['nb_slices'])
-    # todo check previous line
+    
     print st.inputs.time_acquisition
     st.inputs.slice_order = lint
     st.inputs.ref_slice = int(epiResults['nb_slices'])
@@ -492,9 +548,7 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     preproc.connect(segment,"native_class_images" ,norm12bis, 'apply_to_files')
 
 
-    # In[24]:
-
-    # data sink provisoire
+    # data sink 
     datasink = pe.Node(nio.DataSink(), name='datasink')
     datasink.inputs.base_directory = resultdir
 
@@ -517,7 +571,7 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     preproc.connect(norm12bis,  'normalized_image', datasink, 'structural.normalized_image')
 
     # slice timing results
-    preproc.connect(st,  'timecorrected_files', datasink, 'functionnal')
+    preproc.connect(st,  'timecorrected_files', datasink, 'functionnal.timecorrected_files')
 
     # realign mean_image and realignment_parameters
     preproc.connect(realign,  'mean_image', datasink, 'functionnal.mean_image')
@@ -530,27 +584,55 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
 
     preproc.connect(norm12,  'normalized_files', datasink, 'functionnal.normalized_files')
     preproc.connect(norm12,  'normalized_image', datasink, 'functionnal.normalized_image')
+    
+    iflogger.info( "preprocess end")  
+
+    # ------------------------------------
+    #
+    # the output node
+
+    # from bandpass wf 
+    #from nipype import SelectFiles, Node
+    #templates = dict(wmMask=sourcedir+ "/" + "wc2*.nii",
+                     #csfMask=sourcedir+ "/" + "wc3*.nii",
+                     #filesToMerge=sourcemergeddir + "/" + "wcra*.nii",
+                     #mocoVariables=funcdir+ "/" + "rp*.txt")
+
+    #filesource = Node(SelectFiles(templates), "filesource")
+    #filesource.inputs.subject_id = "subj1"
+    #filesource.outputs.get()
+    #hpass =  0.01
+    #lpass = 0.1
+
+    from nipype.interfaces.utility import Function, IdentityInterface
+    
+
+    field_list=['normalized_masks', 
+                'filesToMerge',
+                'mocoVariables']
 
 
-    # In[25]:
+    outputNode = Node(IdentityInterface(fields=field_list), name="outputNode")
+    
 
-    preproc.run()
+
+    # the connects of output mode
+
+    preproc.connect(norm12bis, 'normalized_files', outputNode, 'normalized_masks')
+    preproc.connect(norm12, 'normalized_files', outputNode, 'filesToMerge')
+    preproc.connect(realign,  'realignment_parameters', outputNode, 'mocoVariables')
+
+
+
+    # ---------------------------------
+    #  THE RUN
+
+    # preproc.run()
 
     # visualisation workflow
     preproc.write_graph(graph2use='colored', format='svg', simple_form=True)
 
-    return
+    return preproc
     # The end
 
 
-#def main(name, spm_standalone, mcr, flibasedir, resultdir):
-#    preprocess(name, spm_standalone, mcr, flibasedir, atlasfile, resultdir)
-#    return
-
-
-
-
-if __name__ == "__main__":
-    import sys 
-    print sys.argv
-    preprocess(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
