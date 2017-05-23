@@ -1,7 +1,7 @@
 #!/usr/bin/env python 
 # -*- coding: utf-8 -*-
 
-
+import ginfizz_config
 
 ##---------------------------------------------------------------------------------------
 #
@@ -62,6 +62,7 @@ def getEpiInfos(xmlfile):
                                     tr = child3.text
                                     #print tr
                                     result['TR'] = tr
+                                    ginfizz_config.TR = float(tr)
                     
                         # dynamics
                         if child2.tag == 'dynamics':
@@ -69,6 +70,8 @@ def getEpiInfos(xmlfile):
                                 if child3.tag == 'value':
                                     dynamics = child3.text
                                     result['dynamics'] = dynamics
+                                    ginfizz_config.AcqNb = int(dynamics)
+                                    
                                     
                         # sliceTimingVector
                         if child2.tag == 'sliceTimingVector':
@@ -108,6 +111,8 @@ def getT1file(xmlfile):
                     t1 = child.text
                     t1 = flibasedir + t1
                     print  t1
+                else:
+                    pass
     except:
         print 'exception in T1 file retrieving'
     return t1
@@ -136,7 +141,7 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
             - Segmentation
             - Realignement
             - Coregistration 
-            - Normalization to NIM space
+            - Normalization to MNI space
     
     Inputs:
         - SMP and MCR paths
@@ -224,14 +229,10 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
     preproc.config['execution'] = {'stop_on_first_rerun': 'False',
                                         'hash_method': 'timestamp'}
     
-    # create logging dir under resultdir os.path.join('dir','other-dir') os.makedirs(newpath)
+    # create logging dir done in main resultdir os.path.join('dir','other-dir') os.makedirs(newpath)
     import os
     logsdir = os.path.join(resultdir, 'logs')
-    try:
-        os.makedirs(logsdir)
-    except:
-        print "exception while creating logs directory"
-    
+
     from nipype import config, logging
     config.update_config({'logging': {'log_directory': logsdir,
                                       'log_to_file': True }})
@@ -496,8 +497,6 @@ def preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir):
 
 
     # ## 6 - Normalize
-
-    # In[22]:
 
     # passage à normalize sans 12 non on repasse en 12 et on prend des param de pierre y
     norm12 = pe.Node(interface=spm.Normalize12(), name='norm12')

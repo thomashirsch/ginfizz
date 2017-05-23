@@ -3,6 +3,7 @@
 
 from ginfizz_preprocess import preprocess
 from ginfizz_bandpass import bandpass
+import ginfizz_config
 
 #    preprocess(spm_standalone, mcr, flibasedir, atlasfile, resultdir
 #    main(spm_standalone, mcr, flibasedir, atlasfile, resultdir, hpass, lpass, cthr)
@@ -16,7 +17,12 @@ if __name__ == "__main__":
     import os
     print sys.argv
     
-    resultdir =  sys.argv[5]
+    spm_standalone =  sys.argv[1] 
+    mcr =  sys.argv[2] 
+    flibasedir  =  sys.argv[3]
+    atlasfile  =  sys.argv[4]
+    roiatlasfile =  sys.argv[5]
+    resultdir =  sys.argv[6]
     
     import nipype.pipeline.engine as pe          # pypeline engine
     from nipype import Node
@@ -58,14 +64,11 @@ if __name__ == "__main__":
     
     
     # 1 - preprocess images
-    result_preproc = preprocess(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+    result_preproc = preprocess(spm_standalone, mcr, flibasedir,atlasfile, resultdir)
  
     
     # 2 - bandpass
-    hpass =  0.01
-    lpass = 0.1 
-    acqNb = 240
-    result_prebandpass = bandpass(resultdir, hpass, lpass, acqNb)
+    result_prebandpass = bandpass(resultdir)
 
     
     # connection

@@ -1,31 +1,17 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# de v1 à v2 on introduit les masks wm et csf et les meants <br>
-# de v2 à v3 on plot les mocos, on wrappe le code python, on wrappe le code mathlab bramilla. on refait tout le pipeline <br>
-# de v3 à v4 on change les premier et dernier noeud en identity interfacepour se brancher direct sur le proprocess pipeline <br>
-# v5 au retour de hackfest on change les dérivées t - (t-1) <br>
-# on fait pour les regresseurs R R' R2 plus les 3 tissus dependants soit 21 regresseurs <br>
-# v6 on prend les résultats obtenus avec le preprocess corrigé <br>
-# v7 le preprocess a été changé imagecalculator est passé de nibabel à fslmaths <br>
-# v8 on re introduit le data sink
-# 
+import ginfizz_config
 
-# # To calculate parameters for afni bandpass function and write them in ortho file.txt
-# 
 
 # # Start of the new subworkflow - PREBANDPASS
-
-
-
-
 
 
 # -------------------------------------------
 #
 #     Start of bandpass pipeline
 
-def bandpass(resultdir, hpass, lpass, acqNb):
+def bandpass(resultdir):
     '''
     Description:
         the  functional bandpass pipeline
@@ -56,7 +42,9 @@ def bandpass(resultdir, hpass, lpass, acqNb):
     from nipype.interfaces.fsl.maths import MathsCommand
     from nipype.interfaces.fsl.utils import PlotMotionParams   # to plot moco variables
     
-    print hpass, lpass
+    import ginfizz_config
+    
+    print ginfizz_config.hpass, ginfizz_config.lpass
     
     # creation of a subworflow to calculate the bandpass parameters
     prebandpass = pe.Workflow(name='prebandpass')
@@ -123,12 +111,9 @@ def bandpass(resultdir, hpass, lpass, acqNb):
 
     # ## 1 - compute moco file to feed with ortho.txt file the bandpass node of preprocess workflow 
     # derivatives
-    #lets assume that the time of acquisition between 2 mesures is TR = 2 000 ms
     #dx(t)= x(t) - x(t-1)
     #x(t0) = x(t1)
-    # todo get acqnb from previous pipeline
-    
-    
+       
 
 
     # ## Node 1 - compute moco
@@ -137,6 +122,8 @@ def bandpass(resultdir, hpass, lpass, acqNb):
         import pandas as pd
         import numpy as np
         import os
+        
+        import ginfizz_config
             
         ##---------------------------------------------------------------------------------------
         #
@@ -147,11 +134,11 @@ def bandpass(resultdir, hpass, lpass, acqNb):
         
         def vectorDerivative(v):
             dv = {}
-            for i in range(acqNb):
+            for i in range(ginfizz_config.AcqNb):
                 # print mocodf['x'][i]
                 if i== 0:
                     dv[i]= 0
-                elif i== acqNb-1:
+                elif i== ginfizz_config.AcqNb-1:
                     dv[i]= v[i]-v[i-1]
                 else:
                     dv[i]= v[i]-v[i-1]
@@ -181,9 +168,6 @@ def bandpass(resultdir, hpass, lpass, acqNb):
         # read the moco file to put it in a panda dataframe 
         mocodf = pd.read_csv(mocoFile, header=None, sep='  ',engine='python')
         print(mocodf.head())
-        # todo recuperer ces infos de l'autre pipeline
-        TR = 2000 
-        acqNb = 240
         
         # first, we derivate the 6 colunms of dataframe of moco file, and append the 6 new colums to df
         dfderivate = plusDerivative(mocodf)
@@ -296,7 +280,7 @@ def bandpass(resultdir, hpass, lpass, acqNb):
     fsl_merge.inputs.dimension = 't'
     fsl_merge.inputs.output_type = 'NIFTI_GZ'
     # todo recuperer le TR deja exploité du xml
-    fsl_merge.inputs.tr = 2.0
+    fsl_merge.inputs.tr = ginfizz_config.TR
     #fsl_merge.inputs.force_even = False     
     fsl_merge.inputs.ignore_exception = False     
     #fsl_merge.inputs.sort = False
@@ -356,9 +340,9 @@ def bandpass(resultdir, hpass, lpass, acqNb):
       
     afniBandpass.inputs.automask = False     
     afniBandpass.inputs.environ = {}     
-    afniBandpass.inputs.highpass = hpass     
+    afniBandpass.inputs.highpass = ginfizz_config.hpass     
     afniBandpass.inputs.ignore_exception = False     
-    afniBandpass.inputs.lowpass = lpass     
+    afniBandpass.inputs.lowpass = ginfizz_config.lpass     
     afniBandpass.inputs.outputtype = 'NIFTI_GZ'     
     afniBandpass.inputs.terminal_output = 'stream'   
     
