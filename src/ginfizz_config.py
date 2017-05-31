@@ -1,11 +1,11 @@
 #!/usr/bin/env python 
 # -*- coding: utf-8 -*-
 
-# this file is intented to share global variables and configuration settings
+# this file is intended to share global variables and configuration settings
 
 # global variables coming from XML file
-AcqNb = int(240)     # Acquisition number 
-TR = 2.0          # TR in seconds   
+AcqNb = int(240)     # Acquisition number by default
+TR = 2.0          # TR in seconds   by default
 
 # configuration settings
 hpass =  0.01   # high pass for bandpassing

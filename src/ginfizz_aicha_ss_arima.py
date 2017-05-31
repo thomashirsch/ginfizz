@@ -1,10 +1,14 @@
 #!/usr/bin/env python 
 # coding: utf-8
 
+import ginfizz_config
+
 # cette version est faite pour traiter le signal bp sans arima
 
 # nouvelles specs on part d'un nouvel atlas de 10 régions et on voit quels sont les voxels qui sont en correlations avec ces régions  <br> 
 # on va d'abord determiner combien il y de regions, puis on va les calculer à partir de l'atlas utilisateur
+
+
 def identifyRegionAtlases(atlas_file):
         """compute Regions of Interest number, their integer values from atlas file given by the user,
         then compute the atlas image for each of n values, then
@@ -61,185 +65,232 @@ def identifyRegionAtlases(atlas_file):
 
 # --------------------------------------------------------------------
 
-atlas_file = '/scratch/user/hirsch/datadir/data_set/t0009/repos01/Atlases/atlas_2reg.nii'
+#atlas_file = '/scratch/user/hirsch/datadir/data_set/t0009/repos01/Atlases/atlas_2reg.nii'
 
-regions_images_list = identifyRegionAtlases(atlas_file)
+#regions_images_list = identifyRegionAtlases(atlas_file)
 
 # --------------------------------------------------------------------
-
-import nipype.interfaces.io as nio           # Data i/o
-import nipype.interfaces.spm as spm          # spm
-import nipype.interfaces.matlab as mlab      # how to run matlab
-import nipype.interfaces.utility as util     # utility
-import nipype.pipeline.engine as pe          # pypeline engine
-
-from nipype.interfaces.utility import Function, IdentityInterface
-
-from nipype.interfaces.fsl.maths import MathsCommand
-from nipype.interfaces.fsl.utils import PlotMotionParams   # to plot moco variabl
-from nipype import SelectFiles, Node, MapNode
-
-
-
-# creation of a subworflow to process ROI Correlations
-connectivity = pe.Workflow(name='connectivity')
-
-# comprendre bp dir 
-arimadir = '/scratch/user/hirsch/datadir4/data_results_py/functionnal/bandpassedFile'
-
-resultdir = '/scratch/user/hirsch/datadir4/data_results_py/'
-
-
-from nipype import SelectFiles, Node
-templates = dict(arimaFile=arimadir+ "/" + "*.nii.gz",
-                 normalized_c1_file=resultdir+ "/" + "structural/normalized_files/wc1*.nii",
-                 normalized_c2_file=resultdir+ "/" + "structural/normalized_files/wc2*.nii")
-
-filesource = Node(SelectFiles(templates), "filesource")
-filesource.inputs.subject_id = "subj1"
-filesource.outputs.get()
-
-# lets compute the brain mask c1 + c2 threshold at 0.2 to compute later the target time courses
-
-from nipype.interfaces.fsl import MultiImageMaths
-
-addFiles = pe.Node(interface=MultiImageMaths(), name='addFiles')
-
-addFiles.inputs.op_string = "-add %s"   
-addFiles.inputs.output_datatype = 'short'
-addFiles.inputs.ignore_exception = False     
-addFiles.inputs.output_type = 'NIFTI'     
-addFiles.inputs.terminal_output = 'stream'     
-
-connectivity.connect(filesource, 'normalized_c1_file', addFiles, "in_file")
-connectivity.connect(filesource, 'normalized_c2_file' , addFiles, "operand_files")
-
-from nipype.interfaces.fsl import Threshold
-
-thrFile = pe.Node(interface=Threshold(), name='thrFile')
-
-thrFile.inputs.thresh = 0.2   
-thrFile.inputs.ignore_exception = False     
-thrFile.inputs.output_type = 'NIFTI'     
-thrFile.inputs.terminal_output = 'stream'     
-
-connectivity.connect(addFiles,"out_file" , thrFile, "in_file")
-
-
-
-
-
-
-# here comes the map node, we have to iterate the treatment for each region identified by previous step
-# b = pe.MapNode(interface=B(), name="b", iterfield=['in_file']) 
-# http://nipype.readthedocs.io/en/latest/users/mapnode_and_iterables.html
-
-# lets calculate the mean residu signal eg. time courses in every region 
-# lets use iterables -> startnode.iterables = ('subject_id', subjects)
-
-from nipype.interfaces.fsl.utils import ImageMeants
-
-regMeants = Node(ImageMeants(), name="regMeants")  
-
-regMeants.iterables = ('mask', regions_images_list)
-
-regMeants.inputs.ignore_exception = False     
-regMeants.inputs.order = 1     
-regMeants.inputs.output_type = 'NIFTI_GZ'     
-regMeants.inputs.terminal_output = 'stream'     
-connectivity.connect(filesource, "arimaFile" , regMeants, "in_file")   
-
-
-# correlation computations
-def computeCorrelations(residus, residusRegMean, brainMask):
-    
-        '''Function that takes 3 parameters
-           residus: the residu of arima time courses
-           residuRegMean: the residus mean on determined region i
-           brainMask: the mask of gm and wm thresholded at 0,2
-           Computes pearson correlations between the seed eg. residuRegMean
-           and all the voxels of the brainMask
-           Returns an Nifti images containing the correlations'''
+def aicha(roiatlasfile, resultdir):
+# # Start Pileline -> declaration
         
+        import nipype.interfaces.io as nio           # Data i/o
+        import nipype.interfaces.spm as spm          # spm
+        import nipype.interfaces.matlab as mlab      # how to run matlab
+        import nipype.interfaces.utility as util     # utility
+        import nipype.pipeline.engine as pe          # pypeline engine
+        
+        from nipype.interfaces.utility import Function, IdentityInterface
+        
+        from nipype.interfaces.fsl.maths import MathsCommand
+        from nipype.interfaces.fsl.utils import PlotMotionParams   # to plot moco variabl
+        from nipype import Node, MapNode        
+
+        # creation of a subworflow to process ROI Correlations
+        connectivity = pe.Workflow(name='connectivity')
+        
+        # ## logging management 
+        
+        from nipype import config
+        cfg = dict(logging=dict(workflow_level = 'DEBUG'),
+               execution={'stop_on_first_crash': False,
+                          'hash_method': 'content'})
+        config.update_config(cfg)
+        connectivity.config['execution'] = {'stop_on_first_rerun': 'False',
+                                   'hash_method': 'timestamp'}
+        
+        # create logging dir done in main resultdir os.path.join('dir','other-dir') os.makedirs(newpath)
         import os
-        import numpy as np
-        import matplotlib.pyplot as plt
-        import nibabel as nib
-        from scipy.stats.stats import pearsonr
+        logsdir = os.path.join(resultdir, 'logs')
         
-        # first we get the seed mean signal
-        seed_ts_array = np.loadtxt(residusRegMean)
+        from nipype import config, logging
+        config.update_config({'logging': {'log_directory': logsdir,
+                                      'log_to_file': True }})
+        logging.update_logging(config)
         
-        # from an other hand we get the residus 4D matrix
-        fmri_data=nib.load(residus) 
-        fmri_array=np.asarray(fmri_data.dataobj)
+        from nipype import logging
+        iflogger = logging.getLogger('interface')
+        message = "Start of aicha workflow"
+        iflogger.info(message)        
         
-        # we get the coordinnates of voxels in all gm and wm normalized todo 
-        reg_data=nib.load(brainMask) 
-        regarray=np.asarray(reg_data.dataobj)
-        # transpose(nonzero(a))
-        reg_coords = np.transpose(np.nonzero(regarray))
-        volume_shape = reg_coords.shape
-        print volume_shape
-        coords = list(np.ndindex(volume_shape))
-        print len(coords)
+        # 0 - we fix the working dir to get the commands later
         
-        # the we iterate the correlation calculation on all voxels of the brain mask
-    
-        # the correlation matrix is initialized with all values to 0 
-        corr_matrix = np.full(reg_data.shape, 0, dtype=float)
-    
-        for i in range(reg_coords.shape[0]):
-            target_array = fmri_array[reg_coords[i, 0], reg_coords[i, 1],reg_coords[i,2], :]
-            #print target_array
-            non_zero_nb = np.count_nonzero(target_array)
+        working_dir =  os.path.join(resultdir, "_report")
+        connectivity.base_dir = working_dir
+               
+        # ## 1 - first node data grabbing by select files 
+        
+
+
+        # comprendre bp dir 
+        #arimadir = '/scratch/user/hirsch/datadir4/data_results_py/functionnal/bandpassedFile'
+        
+        #resultdir = '/scratch/user/hirsch/datadir4/data_results_py/'
+                
+        #from nipype import SelectFiles, Node
+        #templates = dict(arimaFile=arimadir+ "/" + "*.nii.gz",
+                         #normalized_c1_file=resultdir+ "/" + "structural/normalized_files/wc1*.nii",
+                         #normalized_c2_file=resultdir+ "/" + "structural/normalized_files/wc2*.nii")
+        
+        #filesource = Node(SelectFiles(templates), "filesource")
+        #filesource.inputs.subject_id = "subj1"
+        #filesource.outputs.get()
+        
+        # intput node
+        field_list=['normalized_masks', 
+                     'bandpassedFile']
+
+
+        inputNodeAicha = Node(IdentityInterface(fields=field_list), name="inputNodeAicha")        
+        
+        
+        # lets compute the brain mask c1 + c2 threshold at 0.2 to compute later the target time courses
+        def regexfilter(files_list,patern):
+                import re
+        
+                for f in files_list:
+                        if re.search(patern, str(f)):
+                                res = f         
+                return res                    
+        
+        from nipype.interfaces.fsl import MultiImageMaths
+        
+        addFiles = pe.Node(interface=MultiImageMaths(), name='addFiles')
+        
+        addFiles.inputs.op_string = "-add %s"   
+        addFiles.inputs.output_datatype = 'short'
+        addFiles.inputs.ignore_exception = False     
+        addFiles.inputs.output_type = 'NIFTI'     
+        addFiles.inputs.terminal_output = 'stream'     
+        
+        connectivity.connect(inputNodeAicha,('normalized_masks',regexfilter,r'wc1.*nii'), addFiles, "in_file")
+        connectivity.connect(inputNodeAicha,('normalized_masks',regexfilter,r'wc2.*nii') , addFiles, "operand_files")
+        
+        from nipype.interfaces.fsl import Threshold
+        
+        thrFile = pe.Node(interface=Threshold(), name='thrFile')
+        
+        thrFile.inputs.thresh = 0.2   
+        thrFile.inputs.ignore_exception = False     
+        thrFile.inputs.output_type = 'NIFTI'     
+        thrFile.inputs.terminal_output = 'stream'     
+        
+        connectivity.connect(addFiles,"out_file" , thrFile, "in_file")
+        
+        # ------------------------------------------------------------
+        # first lets identify all the region of Interest ROIs
+        regions_images_list = identifyRegionAtlases(roiatlasfile)
+        
+        # here comes the node with iterables, we have to iterate the treatment for each region identified by previous step
+        # b = pe.MapNode(interface=B(), name="b", iterfield=['in_file']) 
+        # http://nipype.readthedocs.io/en/latest/users/mapnode_and_iterables.html
+        
+        # lets calculate the mean residu signal eg. time courses in every region 
+        # lets use iterables -> startnode.iterables = ('subject_id', subjects)
+        
+        from nipype.interfaces.fsl.utils import ImageMeants
+        
+        regMeants = Node(ImageMeants(), name="regMeants")  
+        
+        regMeants.iterables = ('mask', regions_images_list)
+        
+        regMeants.inputs.ignore_exception = False     
+        regMeants.inputs.order = 1     
+        regMeants.inputs.output_type = 'NIFTI_GZ'     
+        regMeants.inputs.terminal_output = 'stream'     
+        connectivity.connect(inputNodeAicha, "bandpassedFile" , regMeants, "in_file")   
+        
+        
+        # correlation computations
+        def computeCorrelations(residus, residusRegMean, brainMask):
             
-            # if target time courses are all null, we do not compute correlation
-            if non_zero_nb:
-                try:
-                    p = pearsonr(seed_ts_array,target_array) 
-                    if p[0] > 0.5:
-                        print p[0]
-                    corr_matrix[reg_coords[i, 0], reg_coords[i, 1],reg_coords[i,2]] = p[0] 
-                except:
-                    print "exception"
+                '''Function that takes 3 parameters
+                   residus: the residu of arima time courses
+                   residuRegMean: the residus mean on determined region i
+                   if ARIMA is not triggered the residus is the bandpassed signal
+                   and residuregMean is the average signal on each ROI
+                   brainMask: the mask of gm and wm thresholded at 0,2
+                   Computes pearson correlations between the seed eg. residuRegMean
+                   and all the voxels of the brainMask
+                   Returns an Nifti images containing the correlations'''
+                
+                import os
+                import numpy as np
+                import matplotlib.pyplot as plt
+                import nibabel as nib
+                from scipy.stats.stats import pearsonr
+                
+                # first we get the seed mean signal
+                seed_ts_array = np.loadtxt(residusRegMean)
+                
+                # from an other hand we get the residus 4D matrix
+                fmri_data=nib.load(residus) 
+                fmri_array=np.asarray(fmri_data.dataobj)
+                
+                # we get the coordinnates of voxels in all gm and wm normalized todo 
+                reg_data=nib.load(brainMask) 
+                regarray=np.asarray(reg_data.dataobj)
+                # transpose(nonzero(a))
+                reg_coords = np.transpose(np.nonzero(regarray))
+                volume_shape = reg_coords.shape
+                print volume_shape
+                coords = list(np.ndindex(volume_shape))
+                print len(coords)
+                
+                # the we iterate the correlation calculation on all voxels of the brain mask
+            
+                # the correlation matrix is initialized with all values to 0 
+                corr_matrix = np.full(reg_data.shape, 0, dtype=float)
+            
+                for i in range(reg_coords.shape[0]):
+                        target_array = fmri_array[reg_coords[i, 0], reg_coords[i, 1],reg_coords[i,2], :]
+                        #print target_array
+                        non_zero_nb = np.count_nonzero(target_array)
+                    
+                       # if target time courses are all null, we do not compute correlation
+                        if non_zero_nb:
+                                try:
+                                        p = pearsonr(seed_ts_array,target_array) 
+                                        corr_matrix[reg_coords[i, 0], reg_coords[i, 1],reg_coords[i,2]] = p[0] 
+                                except:
+                                        print("exception calculating pearson correlation") 
+                
+                # save matrix in a file
+                # create the resulting image
+                corr_image = nib.Nifti1Image(corr_matrix,affine=reg_data.affine, header=reg_data.header)
+                # save the correlation array 
+                out_file = os.path.join(os.getcwd(), "corr_roi_reg.nii")
+                nib.save(corr_image, out_file)
+                
+                return out_file
+                
+        # node to compute the correlation matrix as each region i of user atlas mean signal serves as a seed 
+        # and brain mask signal residuserves as the targets
+        # def computeCorrelations(residus, residusRegMean, brainMask):
+        correlationsComputeNode = Node(Function(input_names=['residus', 'residusRegMean', 'brainMask'],
+                                        output_names=['out_file'],
+                                        function=computeCorrelations),
+                                        name='correlationsComputeNode')
         
-        # save matrix in a file
-        # create the resulting image
-        corr_image = nib.Nifti1Image(corr_matrix,affine=reg_data.affine, header=reg_data.header)
-        # save the correlation array
-        out_file = os.getcwd() + '/' + 'corr_regv5.nii'
-        nib.save(corr_image, out_file)
+        connectivity.connect(inputNodeAicha, "bandpassedFile", correlationsComputeNode, "residus")
+        connectivity.connect(regMeants, "out_file", correlationsComputeNode, "residusRegMean")
+        connectivity.connect(thrFile, "out_file", correlationsComputeNode, "brainMask")
         
-        return out_file
+        # data sink
+        datasink = pe.Node(nio.DataSink(), name='datasink')
+        datasink.inputs.base_directory = resultdir
         
-# node to compute the correlation matrix as each region i of user atlas mean signal serves as a seed 
-# and brain mask signal residuserves as the targets
-# def computeCorrelations(residus, residusRegMean, brainMask):
-correlationsComputeNode = Node(Function(input_names=['residus', 'residusRegMean', 'brainMask'],
-                                output_names=['out_file'],
-                                function=computeCorrelations),
-                                name='correlationsComputeNode')
-
-connectivity.connect(filesource, "arimaFile", correlationsComputeNode, "residus")
-connectivity.connect(regMeants, "out_file", correlationsComputeNode, "residusRegMean")
-connectivity.connect(thrFile, "out_file", correlationsComputeNode, "brainMask")
-
-# data sink
-datasink = pe.Node(nio.DataSink(), name='datasink')
-datasink.inputs.base_directory = '/scratch/user/hirsch/datadir4/data_results_py'
-
-# data sink brain mask to compute target time courses
-connectivity.connect(thrFile, "out_file", datasink, 'structural.normalized_c1c2_file')
-
-# data sink of mean signal on ROIs that will be used as seed signal
-connectivity.connect(regMeants,  'out_file', datasink, 'functionnal.regMeants')
-
-# data sink of correlations matrix for ROI i
-connectivity.connect(correlationsComputeNode,  'out_file', datasink, 'functionnal.correlationMatrix')
-
-connectivity.run()
+        # data sink brain mask to compute target time courses
+        connectivity.connect(thrFile, "out_file", datasink, 'structural.normalized_c1c2_file')
+        
+        # data sink of mean signal on ROIs that will be used as seed signal
+        connectivity.connect(regMeants,  'out_file', datasink, 'functionnal.regMeants')
+        
+        # data sink of correlations matrix for ROI i
+        connectivity.connect(correlationsComputeNode,  'out_file', datasink, 'functionnal.correlationMatrix')
+        
+        return connectivity
+        #connectivity.run()
 
 
-# # fin du pipe
+        # # end of pipe
 

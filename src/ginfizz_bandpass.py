@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# coding: utf-8
+# -*- coding: utf-8 -*-
 
 import ginfizz_config
 
@@ -117,69 +117,34 @@ def bandpass(resultdir):
 
 
     # ## Node 1 - compute moco
+ 
+
     
     def computeMoco(mocoFile):
         import pandas as pd
         import numpy as np
         import os
-        
         import ginfizz_config
-            
-        ##---------------------------------------------------------------------------------------
-        #
-        #        UTILS functions
-        #
-        ##---------------------------------------------------------------------------------------
-        
-        
-        def vectorDerivative(v):
-            dv = {}
-            for i in range(ginfizz_config.AcqNb):
-                # print mocodf['x'][i]
-                if i== 0:
-                    dv[i]= 0
-                elif i== ginfizz_config.AcqNb-1:
-                    dv[i]= v[i]-v[i-1]
-                else:
-                    dv[i]= v[i]-v[i-1]
-                    #print 'derivative' + str(i)
-                    #print  v[i]
-            return v
-        
-        def plusDerivative(df):
-            lg = len(df.columns.values)
-            dg = df
-            for j in list(df.columns.values):
-                vprime = vectorDerivative(df[j])
-                dg[lg+j]=vprime
-            return dg
-        
-        def plusSquare(df):
-            lg = len(df.columns.values)
-            ds = df
-            for j in range(6):
-                print j
-                vs = df[j]**2
-                ds[lg+j]=vs
-            return ds    
-        
-        # end utils
+        from ginfizz_tools  import plusDerivative, plusSquare
     
         # read the moco file to put it in a panda dataframe 
-        mocodf = pd.read_csv(mocoFile, header=None, sep='  ',engine='python')
-        print(mocodf.head())
+        mocodf = pd.read_csv(mocoFile, header=None, sep='  ',engine='python') 
         
         # first, we derivate the 6 colunms of dataframe of moco file, and append the 6 new colums to df
         dfderivate = plusDerivative(mocodf)
-        print(dfderivate.head())
         
         # then, we compute the square of the 6 first colums, and append them to df. it makes 18 colums that are going to 
         # participate in the ortho file to make 18 regressors bandpassed
         dfsquare = plusSquare(dfderivate)
         
-        g = dfsquare.to_csv('ortho.txt', sep=' ',index=False, header=False)
-        print g
-        h = os.getcwd() + '/' + 'ortho.txt'
+        #     out_file = os.path.join(os.getcwd(), "merged_array.txt")
+        # np.savetxt(out_file, cvectors, fmt="%.10f")
+
+        h = os.path.join(os.getcwd(), "ortho.txt")
+        
+        #g = dfsquare.to_csv('ortho.txt', sep=' ',index=False, header=False)
+        np.savetxt(h, dfsquare, fmt=str("%.10f"))
+
         return h
     
 
@@ -309,8 +274,8 @@ def bandpass(resultdir):
     prebandpass.connect(fsl_merge, "merged_file" , csfMeants, "in_file")   
     prebandpass.connect(erosioncsf, "out_file", csfMeants, "mask")
 
-    from ginnipi.toolbox.computations import  mergeTables
-    from ginnipi.toolbox.flow import createList3
+    from computations import  mergeTables
+    from flow import createList3
     
     # lets make a list from the 3 file moco+derivative+square, wmmeants, csfmeants
     # Node: func2.createListFrom3

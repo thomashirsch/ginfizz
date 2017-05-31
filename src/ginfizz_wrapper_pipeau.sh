@@ -4,7 +4,7 @@
 MCRROOT=/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91
 SPMSAROOT=/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh
 CODEROOT=/homes_unix/hirsch/ginfizz/src
-DATAROOT=/scratch/user/hirsch/datadirp
+DATAROOT=/scratch/user/hirsch/datadir7
 
 # env var for docker machines, for VIP
 # MCRROOT=/opt/mcrbis/v90
@@ -38,6 +38,8 @@ info "parameters are ${INPUTFILE} and ${OUTPUTDIR} "
 
 info "PATH is ${PATH}"
 info "INPUTFILE is ${INPUTFILE}"
+
+#DATAROOT= ${OUTPUTDIR}
 
 cd ${DATAROOT}
 
@@ -121,13 +123,18 @@ RESULTSDIR=${DATAROOT}/results;
 info "RESULTSDIR is ${RESULTSDIR}"
 export RESULTSDIR;
 
-
+    #spm_standalone =  sys.argv[1] 
+    #mcr =  sys.argv[2] 
+    #flibasedir  =  sys.argv[3]
+    #atlasfile  =  sys.argv[4]
+    #roiatlasfile =  sys.argv[5]
+    #resultdir =  sys.argv[6]
 
 # 1 - make the python preprocess run
 (cd ${CODEROOT};
 pwd;
-exec   python ./ginfizz_preprocess.py  ${SPMSAROOT}   ${MCRROOT}  ${FLIBASEDIR}   ${ATLASFILE} ${RESULTSDIR} ;
-info "1 - python preprocess sent") &&
+exec   python ./ginfizz_main.py  ${SPMSAROOT}   ${MCRROOT}  ${FLIBASEDIR}   ${ATLASFILE}   ${ROIATLASFILE} ${RESULTSDIR} ;
+info "1 - python ginfizz_main sent") &&
 
 
 
@@ -136,12 +143,10 @@ info "1 - python preprocess sent") &&
   cd  ${RESULTSDIR}; 
   pwd;
   ls ;
-  # and copy the logs file to the outputdir
-  ls -l ${CODEROOT}/*.log
-  cp ${CODEROOT}/*.log ${OUTPUTDIR};
+  
   info  "we are sending the tar fct for the following repository"
   
-  tar czf ${OUTPUTDIR}/data_results.tar.gz   ${RESULTSDIR} ;
+  tar czf ${OUTPUTDIR}/data_results.tar.gz   ${RESULTSDIR}/functionnal ${RESULTSDIR}/structural ${RESULTSDIR}/logs ;
   info "4 eval has been sent we get the results in a tarball we give the tarball to VIP";)
 
 info "End running ginfizz wrapper"

@@ -3,6 +3,7 @@
 
 from ginfizz_preprocess import preprocess
 from ginfizz_bandpass import bandpass
+from ginfizz_aicha_ss_arima import aicha
 import ginfizz_config
 
 #    preprocess(spm_standalone, mcr, flibasedir, atlasfile, resultdir
@@ -69,13 +70,21 @@ if __name__ == "__main__":
     
     # 2 - bandpass
     result_prebandpass = bandpass(resultdir)
+    
+    # 3 - intrinsic connectivity computed with pearson correlations 
+    result_aicha = aicha(roiatlasfile, resultdir)
 
     
-    # connection
+    # connection preprocess / bandpass
     
     restingState.connect(result_preproc, 'norm12bis.normalized_files'  ,result_prebandpass, 'inputNode.normalized_masks')
     restingState.connect(result_preproc,  'norm12.normalized_files'  ,result_prebandpass, 'inputNode.filesToMerge')
     restingState.connect(result_preproc,  'realign.realignment_parameters'  ,result_prebandpass, 'inputNode.mocoVariables')
+    
+    # connection bandpass / connectivity
+
+    restingState.connect(result_preproc, 'norm12bis.normalized_files'  ,result_aicha, 'inputNodeAicha.normalized_masks')    
+    restingState.connect(result_prebandpass, 'afniBandpass.out_file'  ,result_aicha, 'inputNodeAicha.bandpassedFile')    
     
     # the run
     restingState.run()

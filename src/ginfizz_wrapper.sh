@@ -40,6 +40,8 @@ info "parameters are ${INPUTFILE} and ${OUTPUTDIR} "
 info "PATH is ${PATH}"
 info "INPUTFILE is ${INPUTFILE}"
 
+#DATAROOT= ${OUTPUTDIR}
+
 cd ${DATAROOT}
 
 pwd
@@ -72,9 +74,12 @@ info "FLIBASEDIR is ${FLIBASEDIR}"
 
 # Export ATLAS base directory expected by the matlab script. 
 export ATLASBASEDIR=${DATAROOT}/${TOP}/${SECONDTOP}/${TROISTOP}/Atlases
-
 info "ATLASBASEDIR is ${ATLASBASEDIR}"
 
+# modification for roi Atlas
+# Export ROI ATLAS base directory expected by the matlab script. 
+export ROIATLASBASEDIR=${DATAROOT}/${TOP}/${SECONDTOP}/${TROISTOP}/ROIAtlases
+info "ROIATLASBASEDIR is ${ROIATLASBASEDIR}"
 
 
 # find the XML file
@@ -97,7 +102,16 @@ fi
 ATLASFILE=`ls ${ATLASBASEDIR}/*.nii` || die "Cannot find nii file in ${ATLASBASEDIR}!"
 info "ATLASFILE is ${ATLASFILE}"
 
-
+# modification for roi Atlas
+# find the Atlas file
+# Search for the .nii file of the subject
+ROIATLASFILE=`ls ${ROIATLASBASEDIR}/*.nii | wc -l | awk '{print $1}'` || die "Cannot count nii files in ${ROIATLASBASEDIR}!"
+if [ ${ROIATLASFILE} -ne 1 ] 
+then
+    die "Found 0 or more than 1 nii file in ${ROIATLASBASEDIR}!"
+fi
+ROIATLASFILE=`ls ${ROIATLASBASEDIR}/*.nii` || die "Cannot find nii file in ${ROIATLASBASEDIR}!"
+info "ROIATLASFILE is ${ROIATLASFILE}"
 
 
 
@@ -110,13 +124,18 @@ RESULTSDIR=${DATAROOT}/results;
 info "RESULTSDIR is ${RESULTSDIR}"
 export RESULTSDIR;
 
-
+    #spm_standalone =  sys.argv[1] 
+    #mcr =  sys.argv[2] 
+    #flibasedir  =  sys.argv[3]
+    #atlasfile  =  sys.argv[4]
+    #roiatlasfile =  sys.argv[5]
+    #resultdir =  sys.argv[6]
 
 # 1 - make the python preprocess run
 (cd ${CODEROOT};
 pwd;
-exec   python ./ginfizz_preprocess.py  ${SPMSAROOT}   ${MCRROOT}  ${FLIBASEDIR}   ${ATLASFILE} ${RESULTSDIR} ;
-info "1 - python preprocess sent") &&
+exec   python ./ginfizz_main.py  ${SPMSAROOT}   ${MCRROOT}  ${FLIBASEDIR}   ${ATLASFILE}   ${ROIATLASFILE} ${RESULTSDIR} ;
+info "1 - python ginfizz_main sent") &&
 
 
 
@@ -125,15 +144,10 @@ info "1 - python preprocess sent") &&
   cd  ${RESULTSDIR}; 
   pwd;
   ls ;
-  # and copy the logs file to the outputdir
-  # todo mise au point du logging plus des exceptions au debut on fait un >> pour catcher la sortie std, eterror
-  # qu on met dans coderoot
-  ls -l ${CODEROOT}/*.log
-  cp ${CODEROOT}/*.log ${OUTPUTDIR};
-
+  
   info  "we are sending the tar fct for the following repository"
   
-  tar czf ${OUTPUTDIR}/data_results.tar.gz   ${RESULTSDIR} ;
+  tar czf ${OUTPUTDIR}/data_results.tar.gz   ${RESULTSDIR}/functionnal ${RESULTSDIR}/structural ${RESULTSDIR}/logs ;
   info "4 eval has been sent we get the results in a tarball we give the tarball to VIP";)
 
-info "End running ginfizz wrapper";
+info "End running ginfizz wrapper"
