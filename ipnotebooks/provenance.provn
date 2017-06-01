@@ -1,0 +1,8 @@
+document
+  prefix foaf <http://xmlns.com/foaf/0.1/>
+  prefix nipype <http://nipy.org/nipype/terms/>
+  prefix niiri <http://iri.nidash.org/>
+  prefix dcterms <http://purl.org/dc/terms/>
+  prefix crypto <http://id.loc.gov/vocabulary/preservation/cryptographicHashFunctions/>
+  
+  activity(niiri:117c17ea301611e7925fa0369fc5f7ee, 2017-05-03T15:34:42.775916, 2017-05-03T15:34:59.883475, [nipype:returnCode="0" %% xsd:integer, nipype:duration="18.07559" %% xsd:float, nipype:version="Unknown", prov:type='nipype:NipypeInterfacesMatlabMatlabcommand', nipype:platform="Linux-3.10.0-514.10.2.el7.x86_64-x86_64-with-centos-7.3.1611-Core", prov:label="MatlabCommand", nipype:module="nipype.interfaces.matlab", nipype:interface="MatlabCommand", nipype:command="/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh /homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91 batch /homes_unix/hirsch/_ipnotebooks/pyscript.m", nipype:commandPath="file://pipeau.dgin.bor/homes

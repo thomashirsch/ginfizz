@@ -1,0 +1,18 @@
+	 (prebandpass.inputNode, prebandpass.erosion): No edge data
+170517-10:39:25,372 workflow DEBUG:
+	 (prebandpass.inputNode, prebandpass.erosion): new edge data: {'connect': [(('normalized_masks', 'def regexfilter(files_list,patern):\n    import re\n    for f in files_list:\n        for g in f:\n            if re.search(patern, str(g)):\n                res = g\n    message = "res = " + res        \n    iflogger.info(message)          \n    return res            \n', ('.*c2.*.nii',)), 'in_file')]}
+170517-10:39:25,374 workflow DEBUG:
+	 (prebandpass.inputNode, prebandpass.erosioncsf): No edge data
+170517-10:39:25,375 workflow DEBUG:
+	 (prebandpass.inputNode, prebandpass.erosioncsf): new edge data: {'connect': [(('normalized_masks', 'def regexfilter(files_list,patern):\n    import re\n    for f in files_list:\n        for g in f:\n            if re.search(patern, str(g)):\n                res = g\n    message = "res = " + res        \n    iflogger.info(message)          \n    return res            \n', ('.*c3.*.nii',)), 'in_file')]}
+
+--------------
+
+170516-19:31:04,311 workflow DEBUG:
+	 (preproc.segment, preproc.addFiles): No edge data
+170516-19:31:04,312 workflow DEBUG:
+	 (preproc.segment, preproc.addFiles): new edge data: {'connect': [(('native_class_images', 'def regexfilter(files_list,patern):\n    import re\n    for f in files_list:\n        for g in f:\n            if re.search(patern, str(g)):\n                res = g\n    return res\n', ('.*c1.*.nii',)), 'in_file')]}
+170516-19:31:04,315 workflow DEBUG:
+	 (preproc.segment, preproc.addFiles): Edge data exists: {'connect': [(('native_class_images', 'def regexfilter(files_list,patern):\n    import re\n    for f in files_list:\n        for g in f:\n            if re.search(patern, str(g)):\n                res = g\n    return res\n', ('.*c1.*.nii',)), 'in_file')]}
+170516-19:31:04,316 workflow DEBUG:
+	 (preproc.segment, preproc.addFiles): new edge data: {'connect': [(('native_class_images', 'def regexfilter(files_list,patern):\n    import re\n    for f in files_list:\n        for g in f:\n            if re.search(patern, str(g)):\n                res = g\n    return res\n', ('.*c1.*.nii',)), 'in_file'), (('native_class_images', 'def regexfilter(files_list,patern):\n    import re\n    for f in files_list:\n        for g in f:\n            if re.search(patern, str(g)):\n                res = g\n    return res\n', ('.*c2.*.nii',)), 'operand_files')]}
