@@ -1,0 +1,1008 @@
+
+
+-------------
+1 - version de centos
+cat /etc/redhat-release
+CentOS Linux release 7.3.1611 (Core)
+
+
+-------------
+2 - on trouve l'image sur dockerhub de cette image
+centos:latest
+on crée le Dockerfile
+on build avec la cmd: 
+docker build  -t docker-rstp3 .
+
+--------------------------
+le cleaning
+docker rmi --force <image>
+docker ps
+docker stop <container>
+--------------------------
+
+
+--------------
+3 - on va essayer le bash avec un dockefile minimal
+le run
+docker run -i -t  docker-rstp3 /bin/bash 
+ça marche
+pour sortir
+exit
+
+-------------------------
+les infos venant de vip sont:
+
+
+------------------
+4 - on va monter un nouveau volume / data
+avec la commande dans le docker file
+VOLUME /data
+
+
+--------------------
+5 - comme on sait pas exactement où on va recuperer le tarball t0009.tgz
+on va faire semblant qu'il est dans le ctxt, donc, il va etre copié automatiquement - non il n'est pas copié auto
+je n'arrive pas à retrouver le fichier d'input donc je vais monter un volume dans le container qui reflete la directory de départ, cad    
+/homes_unix/hirsch/_new_pipe/try_docker_v3
+avec une commande du type 
+$ docker run -d -P --name web -v /src/webapp:/webapp training/webapp python app.py
+
+docker run -i -t  docker-rstp3 -v /homes_unix/hirsch/_new_pipe/try_docker_v3:/data /bin/bash 
+marche pas
+
+----------------------
+je vais essayer avec le volume copié sur le contexte
+$ docker run -d -P --name web -v /src/webapp:/webapp training/webapp python app.py
+
+dans mon cas
+docker run -i -t  docker-rstp3 -v /homes_unix/hirsch/_new_pipe/try_docker_v3:/rstp_data /bin/bash
+marche pas
+--------------
+autre essai dans le build
+là ca marche mais c'est au build pas au runtime pas en argument du container
+--------
+je run avec le bash shell wrapper
+docker run -i -t  docker-rstp3 . /bin/bash /rstp_code/rstp_preprocess_wrapper.sh rstp_data/t0009.tgz outdir
+probleme de path
+essai de CMD
+
+---------------------------------
+7 février 2017
+la on essaye de lancer le bon bash, et, de passer les arguments au run du container
+docker run -i -t  docker-rstp3 . /rstp_data/t0009.tgz outdir
+la syntaxe de entrypoint n est pa la bonne : ya pas le /bin/bash
+il y a des guillemets
+
+la doc docker dit:
+COPY ./docker-entrypoint.sh /
+ENTRYPOINT ["/docker-entrypoint.sh"]
+
+-----------------------------
+TOP
+la bonne commande de run est
+docker run -i -t  docker-rstp3  /rstp_data/t0009.tgz outdir
+
+----------------------------
+TOP
+to remove all images
+#!/bin/bash
+# Delete all containers
+docker rm $(docker ps -a -q)
+# Delete all images
+docker rmi $(docker images -q)
+
+----------------------------
+TOP
+install de mcr R2015b est là
+ls /srv/shares/softs/downloads/MCR_2015b/
+finalement je l'installe depuis internet avec l'exemple de christian glattard
+-----------------
+
+Dockerfile ex de pascal girad
+
+FROM centos:latest
+
+RUN yum -y update
+
+COPY ./script_optional_inputs.sh script_optional_inputs.sh
+COPY ./initial_file.txt initial_file.txt
+COPY ./final_file.txt final_file.txt
+
+RUN chmod 777 script_optional_inputs.sh
+
+WORKDIR /
+
+ENV PATH=$PATH:/bash-4.2$ docker push mcr2015b
+The push refers to a repository [docker.io/library/mcr2015b]
+c3004fe0a0d1: Preparing 
+067e81f5733f: Preparing 
+9f2185d300a4: Preparing 
+34e7b85d83e4: Preparing 
+denied: requested access to the resource is denie
+--------------------
+
+docker build -t rstp4 .
+docker run -i -t  rstp4
+
+-----------------------
+pour recuperer le fichier data on va monter un volume sur l host
+docker run -d -P --name web -v /src/webapp:/webapp training/webapp python app.py
+dans notre cas
+docker run -i -t  rstp4 -v /homes_unix/hirsch/_new_pipe/try_docker_v3:/try3 
+
+docker run -d -P -t rstp4 -v /homes_unix/hirsch/_new_pipe/try_docker_v3:/try3 
+marche pas
+autre essai
+docker run -v /Users/<path>:/<container path>
+autre essai pour un fichier
+docker run --rm -it -v ~/.bash_history:/root/.bash_history ubuntu /bin/bash
+----------------------------------
+TOP
+dans mon cas ça marche
+docker run --rm -it -v /homes_unix/hirsch/t0009.tgz:/root/t0009.tgz rstp4
+
+puis
+./rstp_preprocess_wrapper.sh /root/t0009.tgz outrepo
+
+-----------------------
+installation de mcr R2015b pour V8.6
+
+à l'installation, il me donne les paths suivants
+On the target computer, append the following to your LD_LIBRARY_PATH environment variable:  /homes_unix/hirsch/docker_matlab/mcr/v90/runtime/glnxa64:/homes_unix/hirsch/docker_matlab/mcr/v90/bin/glnxa64:/homes_unix/hirsch/docker_matlab/mcr/v90/sys/os/glnxa64:
+
+------------------------------
+7 février  - 20:09
+ça marche
+docker run --rm -it -v /homes_unix/hirsch/t0009.tgz:/root/t0009.tgz rstp5
+dans le bash du container,faire 
+./rstp_preprocess_wrapper.sh /root/t0009.tgz outrepo
+
+--------------------------------
+--------------------------------
+todo essayer de faire marcherun programme simple matlab hello
+
+---------------------------------
+8 février
+essai de faire marcher l'executable matlab  hello dans docker
+
+docker run --rm -it  hello1
+
+[root@ee814051c562 /]# ./run_hello.sh
+------------------------------------------
+Usage:
+./run_hello.sh <deployedMCRroot> args
+[root@ee814051c562 /]# ./run_hello.sh /homes_unix/hirsch/docker_matlab
+------------------------------------------
+Setting up environment variables
+---
+LD_LIBRARY_PATH is .:/homes_unix/hirsch/docker_matlab/runtime/glnxa64:/homes_unix/hirsch/docker_matlab/bin/glnxa64:/homes_unix/hirsch/docker_matlab/sys/os/glnxa64:/homes_unix/hirsch/docker_matlab/sys/opengl/lib/glnxa64::/homes_unix/hirsch/docker_matlab/v90/runtime/glnxa64:/homes_unix/hirsch/docker_matlab/v90/bin/glnxa64:/homes_unix/hirsch/docker_matlab/v90/sys/os/glnxa64
+./hello: error while loading shared libraries: libmwlaunchermain.so: cannot open shared object file: No such file or directory
+
+----------------------------
+la commande qui vient de la page web de vistalab/mcr-84 est:
+
+docker run --rm -ti \
+        -v </path/to/MSAE/parent/folder>:/execute \
+        vistalab/mcr-v84 \
+        /execute/<name of your MSAE> [<any input arguments>]
+TOP ca marche dessous
+dans mon cas 
+docker run --rm -ti \
+        -v /homes_unix/hirsch/_new_pipe/try_mcr_v1:/execute \
+        mcr2015b \
+        /execute/hello
+---------------------------------------------------
+------------------------------------------------
+TOP le dockerfile qui marche pour être exécuté dans un container est le suivant:
+FROM mcr2015b
+RUN echo "--- START   ----------"
+VOLUME /execute_msae
+COPY ./hello /execute_msae/
+ENTRYPOINT ["/bin/bash"]
+----------------------------------
+
+TOP DEBUT
+
+docker build -t docker_rstp_v1 .
+
+docker run --rm -it -v /homes_unix/hirsch/t0009.tgz:/root/t0009.tgz docker_rstp_v1
+
+
+puis dans le container
+./rstp_preprocess_wrapper.sh /root/t0009.tgz outrepo
+
+------------------------
+rappels
+c là ou est le XML /homes_unix/hirsch/_new_pipe/new_data/data_set/xml_example.xml
+J'ai installé ton MCR 2015 sous /srv/shares/softs/MCR_2015b.
+On the target computer, append the following to your LD_LIBRARY_PATH environment variable:
+
+/srv/shares/softs/MCR_R2015b/v90/runtime/glnxa64:/srv/shares/softs/MCR_R2015b/v90/bin/glnxa64:/srv/shares/softs/MCR_R2015b/v90/sys/os/glnxa64:
+
+mcrroot sur pipeau est /srv/shares/softs/MCR_R2015b/v90
+---------------------------
+le nouveau fichier data bon est  -> /homes_unix/hirsch/_new_pipe/new_data/data_set.tar.gz
+docker build -t docker_rstp_v1 .
+la nouvelle commande de run devient
+docker run --rm -it -v /homes_unix/hirsch/_new_pipe/new_data/data_set.tar.gz:/root/data_set.tar.gz docker_rstp_v1
+la nouvelle commande dans le container devient
+./rstp_preprocess_wrapper.sh /root/data_set.tar.gz outrepo
+TOP
+appel au bash qui appel un msae   
+eval ./try1 ${XMLFILE}
+
+donc le nouveau fichier XML devient /homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01/xml_example.xml
+./rstp_preprocess_wrapper.sh /homes_unix/hirsch/_new_pipe/new_data/data_set.tar.gz:/root/data_set.tar.gz outrepo
+
+TODO régler le pb
+bash-4.2$ docker push mcr2015b
+The push refers to a repository [docker.io/library/mcr2015b]
+c3004fe0a0d1: Preparing 
+067e81f5733f: Preparing 
+9f2185d300a4: Preparing 
+34e7b85d83e4: Preparing 
+denied: requested access to the resource is denie
+----------------------------------
+9 février 2017
+TOP
+toutes les commandes à faire sont
+chmod +x rstp_v1_compile.sh
+./rstp_v1_compile.sh
+docker build -t docker_rstp_v1 .
+la nouvelle commande de run devient
+docker run --rm -it -v /homes_unix/hirsch/_new_pipe/new_data/data_set.tar.gz:/root/data_set.tar.gz docker_rstp_v1
+la nouvelle commande dans le container devient
+./rstp_preprocess_wrapper.sh /root/data_set.tar.gz outrepo
+
+-----------------------------------
+PB execution matlab sur cible docker
+
+Warning: Undefined function or variable 'cfg_mlbatch_appcfg_master'.
+
+Error in cfg_util>local_initapps (line 1440)
+
+
+Error in cfg_util (line 743)
+
+
+Error in spm_jobman (line 189)
+
+
+Error in rstp_v1 (line 122)
+
+
+> In rstp_v1 (line 124)
+Error using rstp_v1 (line 125)
+Can't initialize spm job manager.
+------
+je pense que c'est qu'il manque le path vers spm12
+'/srv/shares/softs/spm12-full'
+
+------------------------------------
+PB push sur docker de l'image mcr2015b
+
+bash-4.2$ docker push spm12:latest
+The push refers to a repository [docker.io/library/spm12]
+649030048909: Preparing 
+4e19c648cd50: Preparing 
+22961e0ab7cf: Preparing 
+3aa70264bc2e: Preparing 
+c3004fe0a0d1: Preparing 
+067e81f5733f: Waiting 
+9f2185d300a4: Waiting 
+34e7b85d83e4: Waiting 
+denied: requested access to the resource is denied
+
+
+------------------------------------
+on revient sur le batch SPM
+
+avec le fichier 
+/homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01/xml_example.xml
+
+-------------------------------------
+lundi 13 février
+j'ai fait un nouveau repos docker_rstp
+j'ai fait un nouveau tarball au meme endroit dans /new_data/data_set.tar.gz
+j'essaye de faire une image de spm standalone avec les versions spm12 r 6906 et mcr R2016b
+
+TOP
+toutes les commandes à faire sont
+chmod +x rstp_v1_compile.sh
+./rstp_v1_compile.sh
+docker build -t docker_rstp .
+la nouvelle commande de run devient
+docker run --rm -it -v /homes_unix/hirsch/_new_pipe/new_data/data_set.tar.gz:/root/data_set.tar.gz docker_rstp
+la nouvelle commande dans le container devient
+/rstp_code/rstp_preprocess_wrapper.sh /root/data_set.tar.gz outrepo
+
+--------------
+PB 
+la commande est ./run_spm12.sh /usr/local/MATLAB/MATLAB_Compiler_Runtime/v713/  moi c la v90
+/opt/spm12/run_spm12.sh /opt/mcr/v85
+peut-etre resolu
+------------------
+on reprend le code dans rstp
+% only to debug on pipeau i set the env varaiable to comment when on docker
+% target
+setenv('FLIBASEDIR', '/homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01');
+atlasdir='/homes_unix/hirsch/historique_fli_iam/Working_pipeline_July2016/Dataset/Atlases';
+% end debug on targetTOP
+toutes les commandes à faire sont
+chmod +x rstp_v1_compile.sh
+./rstp_v1_compile.sh
+docker build -t docker_rstp .
+la nouvelle commande de run devient
+docker run --rm -it -v /homes_unix/hirsch/_new_pipe/new_data/data_set.tar.gz:/root/data_set.tar.gz docker_rstp
+la nouvelle commande dans le container devient
+/rstp_code/rstp_preprocess_wrapper.sh /root/data_set.tar.gz outrepo
+
+------
+arg du matlab sont 
+flibasedir,atlasdir,outputdir
+'/homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01', '/homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01/Atlases', 'ouputdir'
+
+-----------------------
+PB batch
+Warning: SPM matlabbatch job step1 failed to run. 
+> In rstp_v1 (line 304) 
+Error using harvest (line 47)
+Dependencies resolved, but not suitable for this item.
+In item Deformation Field:
+Dependency 1: Segment: Forward Deformations (out.fordef(:))
+
+
+
+Error in harvest (line 49)
+
+Error in harvest (line 62)
+
+Error in harvest (line 49)
+
+Error in harvest (line 51)
+
+Error in cfg_util>local_runcj (line 1723)
+
+Error in cfg_util (line 959)
+
+Error in spm_jobman>fill_run_job (line 458)
+
+Error in spm_jobman (line 247)
+
+Error in rstp_v1 (line 302)
+ 
+Undefined function or variable 'xml_info'.
+ 
+Undefined function or variable 'xml_info'.
+ 
+Undefined function or variable 'xml_info'.
+ 
+Undefined function or variable 'xml_info'.
+ 
+Undefined function or variable 'xml_info'.
+ 
+Undefined function or variable 'xml_info'.
+
+
+------------------------------
+PB 
+T2star =
+
+/rstp_data/data_set/t0009/repos01/T2star/t0009_t2ffe_s05_e01_tmodule.nii
+
+Warning: Undefined function or variable 'cfg_mlbatch_appcfg_master'.
+
+Error in cfg_util>local_initapps (line 1440)
+
+
+Error in cfg_util (line 743)
+
+
+Error in spm_jobman (line 189)
+
+
+Error in rstp (line 106)
+
+
+> In rstp (line 108)
+Error using rstp (line 109)
+Can't initialize spm job manager.
+
+MATLAB:SPM12_step1
+[  ] INFO: End running RSTP wrapper
+----------------------
+suite pb avec le matlab path
+	MATLABPATH
+
+	/opt/mcr/v90/mcr/toolbox/compiler/deploy
+	/root/.mcrCache9.0/rstp_00/rstp
+	/root/.mcrCache9.0/rstp_00/toolbox/local
+	/root/.mcrCache9.0/rstp_00/srv/shares/softs/spm12-full
+	/root/.mcrCache9.0/rstp_00/srv/shares/softs/spm12-full/EEGtemplates
+	/root/.mcrCache9.0/rstp_00/srv/shares/softs/spm12-full/matlabbatch
+	/root/.mcrCache9.0/rstp_00/srv/shares/softs/spm12-full/tpm
+	/root/.mcrCache9.0/rstp_00/toolbox/compiler
+	/opt/mcr/v90/mcr/toolbox/matlab/lang
+	/opt/mcr/v90/mcr/toolbox/matlab/ops
+	/opt/mcr/v90/mcr/toolbox/matlab/elmat
+	/opt/mcr/v90/mcr/toolbox/matlab/strfun
+	/opt/mcr/v90/mcr/toolbox/matlab/iofun
+	/opt/mcr/v90/mcr/toolbox/matlab/general
+	/opt/mcr/v90/mcr/toolbox/matlab/datafun
+	/opt/mcr/v90/mcr/toolbox/matlab/matfun
+	/opt/mcr/v90/mcr/toolbox/matlab/polyfun
+	/opt/mcr/v90/mcr/toolbox/matlab/randfun
+	/opt/mcr/v90/mcr/toolbox/matlab/sparfun
+	/opt/mcr/v90/mcr/toolbox/matlab/datatypes
+	/opt/mcr/v90/mcr/toolbox/matlab/elfun
+	/opt/mcr/v90/mcr/toolbox/matlab/funfun
+	/opt/mcr/v90/mcr/toolbox/matlab/icons
+	/opt/mcr/v90/mcr/toolbox/matlab/specfun
+	/opt/mcr/v90/mcr/toolbox/matlab/timefun
+	/opt/mcr/v90/mcr/toolbox/matlab/helptools
+	/opt/mcr/v90/mcr/toolbox/matlab/depfun
+	/opt/mcr/v90/mcr/toolbox/matlab/codetools
+	/opt/mcr/v90/mcr/toolbox/matlab/datamanager
+	/opt/mcr/v90/mcr/toolbox/matlab/datastoreio
+	/opt/mcr/v90/mcr/toolbox/matlab/graphfun
+	/opt/mcr/v90/mcr/toolbox/matlab/guide
+	/opt/mcr/v90/mcr/toolbox/matlab/mapreduceio
+	/opt/mcr/v90/mcr/toolbox/matlab/verctrl
+	/opt/mcr/v90/mcr/toolbox/matlab/graph2d
+	/opt/mcr/v90/mcr/toolbox/matlab/graph3d
+	/opt/mcr/v90/mcr/toolbox/matlab/graphics
+	/opt/mcr/v90/mcr/toolbox/matlab/graphics/obsolete
+	/opt/mcr/v90/mcr/toolbox/matlab/plottools
+	/opt/mcr/v90/mcr/toolbox/matlab/scribe
+	/opt/mcr/v90/mcr/toolbox/matlab/scribe/obsolete
+	/opt/mcr/v90/mcr/toolbox/matlab/specgraph
+	/opt/mcr/v90/mcr/toolbox/matlab/uitools
+	/opt/mcr/v90/mcr/toolbox/matlab/uitools/obsolete
+	/opt/mcr/v90/mcr/toolbox/matlab/optimfun
+	/opt/mcr/v90/mcr/toolbox/matlab/images
+	/opt/mcr/v90/mcr/toolbox/matlab/addons
+	/opt/mcr/v90/mcr/toolbox/matlab/addons/cef
+	/opt/mcr/v90/mcr/toolbox/matlab/addons/fallbackmanager
+	/opt/mcr/v90/mcr/toolbox/matlab/winfun
+	/opt/mcr/v90/mcr/toolbox/matlab/winfun/NET
+	/opt/mcr/v90/mcr/toolbox/matlab/testframework
+	/opt/mcr/v90/mcr/toolbox/matlab/testframework/obsolete
+	/opt/mcr/v90/mcr/toolbox/matlab/configtools
+	/opt/mcr/v90/mcr/toolbox/matlab/imagesci
+	/opt/mcr/v90/mcr/toolbox/shared/hadoopserializer
+	/opt/mcr/v90/mcr/toolbox/shared/asynciolib
+	/opt/mcr/v90/mcr/toolbox/shared/testmeaslib/general
+	/opt/mcr/v90/mcr/toolbox/shared/multimedia
+	/opt/mcr/v90/mcr/toolbox/matlab/audiovideo
+	/opt/mcr/v90/mcr/toolbox/shared/networklib
+	/opt/mcr/v90/mcr/toolbox/matlab/networklib
+	/opt/mcr/v90/mcr/toolbox/matlab/external/interfaces/python
+	/opt/mcr/v90/mcr/toolbox/shared/testmeaslib/graphics
+	/opt/mcr/v90/mcr/toolbox/shared/instrument
+	/opt/mcr/v90/mcr/toolbox/shared/coder/coder
+	/opt/mcr/v90/mcr/toolbox/shared/controllib/general
+	/opt/mcr/v90/mcr/toolbox/shared/controllib/graphics
+	/opt/mcr/v90/mcr/toolbox/shared/controllib/graphics/utils
+	/opt/mcr/v90/mcr/toolbox/shared/controllib/graphics/plotoptions
+	/opt/mcr/v90/mcr/toolbox/matlab/system
+	/opt/mcr/v90/mcr/toolbox/matlab/timeseries
+	/opt/mcr/v90/mcr/toolbox/matlab/hds
+	/opt/mcr/v90/mcr/toolbox/matlab/webcam
+	/opt/mcr/v90/mcr/toolbox/matlab/external/interfaces/webservices/restful
+	/opt/mcr/v90/mcr/toolbox/matlab/external/interfaces
+	/opt/mcr/v90/mcr/toolbox/matlab/external/interfaces/webservices
+	/opt/mcr/v90/mcr/toolbox/matlab/external/interfaces/webservices/wsdl
+
+-----------------------------
+14 février 2017
+PB avec le build docker sur mon espace ds pipeau->
+./run_spm12.sh: line 57: /opt/spm12_glnxa64: No such file or directory
+
+mais, j'ai aussi un pb dans l'espace spm12
+bash-4.2$ ./run_spm12.sh /srv/shares/softs/MCR_R2015b/v90
+
+------------------------------------------------------------------------
+       Segmentation violation detected at Tue Feb 14 10:35:35 2017
+------------------------------------------------------------------------
+
+Configuration:
+  Crash Decoding      : Disabled
+  Crash Mode          : continue (default)
+  Default Encoding    : UTF-8
+  GNU C Library       : 2.17 stable
+  Host Name           : pipeau.dgin.bor
+  MATLAB Architecture : glnxa64
+  MATLAB Root         : /srv/shares/softs/MCR_R2015b/v90
+  MATLAB Version      : 8.6.0.267246 (R2015b)
+  Operating System    : Linux 3.10.0-514.2.2.el7.x86_64 #1 SMP Tue Dec 6 23:06:41 UTC 2016 x86_64
+  Processor ID        : x86 Family 6 Model 79 Stepping 1, GenuineIntel
+
+Fault Count: 1
+
+
+Abnormal termination:
+Segmentation violation
+
+Register State (from fault):
+  RAX = 0000000000000000  RBX = 00007ffddb6f1f40
+  RCX = 0000000000000000  RDX = 00000000006030a0
+  RSP = 00007ffddb6f1d00  RBP = 00007ffddb6f1e90
+  RSI = 0000000000000001  RDI = 00007ffddb6f1f40
+
+   R8 = 0000000000000000   R9 = 0000000000400aff
+  R10 = 00007ffddb6f1ec0  R11 = 00007fa9a23e1e90
+  R12 = 0000000000000001  R13 = 0000000000603560
+  R14 = 0000000000000000  R15 = 0000000000400aff
+
+  RIP = 00007fa9858e4916  EFL = 0000000000010202
+
+   CS = 0033   FS = 0000   GS = 0000
+
+Stack Trace (from fault):
+[  0] 0x00007fa9858e4916 /srv/shares/softs/MCR_R2015b/v90/bin/glnxa64/libmwmclmcr.so+02431254
+[  1] 0x00007fa9858e2372 /srv/shares/softs/MCR_R2015b/v90/bin/glnxa64/libmwmclmcr.so+02421618 mclInitializeComponentInstanceNonEmbeddedStandalone+00000050
+[  2] 0x00007fa9a23e1ee3 /srv/shares/softs/MCR_R2015b/v90/runtime/glnxa64/libmwmclmcrrt.so+00098019 mclInitializeComponentInstanceNonEmbeddedStandalone_proxy+00000083
+[  3] 0x0000000000400bcf              /srv/shares/softs/spm12/spm12_glnxa64+00003023
+[  4] 0x0000000000400bf6              /srv/shares/softs/spm12/spm12_glnxa64+00003062
+[  5] 0x0000000000400c51              /srv/shares/softs/spm12/spm12_glnxa64+00003153
+[  6] 0x00007fa993fbcdfc /srv/shares/softs/MCR_R2015b/v90/bin/glnxa64/libmwmclbase.so+00400892 _ZNK5boost9function0IiEclEv+00000028
+[  7] 0x00007fa982852a9c /srv/shares/softs/MCR_R2015b/v90/bin/glnxa64/libmwMVMLocal.so+00539292 _ZNK5boost9function1IiRKSt6vectorISbIDsSt11char_traitsIDsESaIDsEESaIS5_EEEclES9_+00000028
+[  8] 0x00007fa9937ecaed /srv/shares/softs/MCR_R2015b/v90/bin/glnxa64/libmwmcr.so+00621293
+[  9] 0x00007fa9937eceb0 /srv/shares/softs/MCR_R2015b/v90/bin/glnxa64/libmwmcr.so+00622256
+[ 10] 0x00007fa9937ed134 /srv/shares/softs/MCR_R2015b/v90/bin/glnxa64/libmwmcr.so+00622900 _Z12mcr_run_mainRKN5boost9function0IiEEbb+00000228
+[ 11] 0x00007fa982848f9d /srv/shares/softs/MCR_R2015b/v90/bin/glnxa64/libmwMVMLocal.so+00499613
+[ 12] 0x00007fa993caccf7 /srv/shares/softs/MCR_R2015b/v90/bin/glnxa64/libmwmvm.so+02432247
+[ 13] 0x00007fa993fbc4bb /srv/shares/softs/MCR_R2015b/v90/bin/glnxa64/libmwmclbase.so+00398523 mclRunMain+00000459
+[ 14] 0x0000000000400d0c              /srv/shares/softs/spm12/spm12_glnxa64+00003340
+[ 15] 0x00007fa9a1b0cb35                               /usr/lib64/libc.so.6+00138037 __libc_start_main+00000245
+[ 16] 0x0000000000400a19              /srv/shares/softs/spm12/spm12_glnxa64+00002585
+
+
+If this problem is reproducible, please submit a Service Request via:
+    http://www.mathworks.com/support/contact_us/
+
+A technical support engineer might contact you with further information.
+
+Thank you for your help.** This crash report has been saved to disk as /homes_unix/hirsch/matlab_crash_dump.18126-1 **
+
+
+
+MATLAB is exiting because of fatal error
+./run_spm12.sh : ligne 58 : 18126 Processus arrêté      `dirname \`readlink -f $0\``/${MACAPP}spm12_${MWE_ARCH} $*
+------------------------------
+TOP reponse de christophe
+http://www.fil.ion.ucl.ac.uk/spm/download/restricted/utopia/
+ca marche dans 
+bash-4.2$ pwd
+/srv/shares/softs/spm12
+bash-4.2$ ./run_spm12.sh /srv/shares/softs/MCR/v713
+---------------------------
+TOP
+help mcrversion
+help ver
+Here are the MCR and MATLAB Compiler versions for some releases of MATLAB:
+
+ ----------------------------------------------
+ MATLAB            | MATLAB        | MATLAB   | 
+ Release           | Component     | Compiler | 
+                   | Runtime (MCR) | Version  | 
+ ----------------------------------------------
+ R14    (7.0)      | 7.0           | 4.0      | 
+ R14SP1 (7.0.1)    | 7.1           | 4.1      | 
+ R14SP2 (7.0.4)    | 7.2           | 4.2      | 
+ R14SP3 (7.1)      | 7.3           | 4.3      | 
+ R2006a (7.2)      | 7.4           | 4.4      | 
+ R2006b (7.3)      | 7.5           | 4.5      | 
+ R2007a (7.4)      | 7.6           | 4.6      | 
+ R2007b (7.5)      | 7.7           | 4.7      | 
+ R2008a (7.6)      | 7.8           | 4.8      | 
+ R2008b (7.7)      | 7.9           | 4.9      | 
+ R2009a (7.8)      | 7.10          | 4.10     | 
+ R2009b (7.9)      | 7.11          | 4.11     | 
+ R2009bSP1 (7.9.1) | 7.12          | 4.12     | 
+ R2010a (7.10)     | 7.13          | 4.13     | 
+ R2010b(7.11)      | 7.14          | 4.14     |
+ R2010bSP1 (7.11.1)| 7.14.1        | 4.14.1   |
+ R2010bSP2 (7.11.2)| 7.14.2        | 4.14.1   |
+ R2011a (7.12)     | 7.15          | 4.15     |
+ R2011b (7.13)     | 7.16          | 4.16     |
+ R2012a (7.14)     | 7.17          | 4.17     |
+ R2012b (8.0)      | 8.0           | 4.18     |
+ R2013a (8.1)      | 8.1           | 4.18.1   |
+ R2013b (8.2)      | 8.2           | 5.0      |
+ R2014a (8.3)      | 8.3           | 5.1      |
+ R2014b (8.4)      | 8.4           | 5.2      |
+ ----------------------------------------------
+
+donc v713 correspondà matlab R2010a
+
+------------------------------
+TOP
+toutes les commandes à faire sont
+chmod +x rstp_v1_compile.sh
+./rstp_v1_compile.sh
+docker build -t docker_rstp .
+la nouvelle commande de run devient
+docker run --rm -it -v /homes_unix/hirsch/_new_pipe/new_data/data_set.tar.gz:/root/data_set.tar.gz docker_rstp
+la nouvelle commande dans le container devient
+/rstp_code/rstp_preprocess_wrapper.sh /root/data_set.tar.gz /rstp_data/data_set/t0009/repos01/Atlases outrepo
+
+----------------------------------------------
+ja'ai essayé avec des versions qui marchent et ca donne
+On the target computer, append the following to your LD_LIBRARY_PATH environment variable:
+
+/opt/mcr/v91/runtime/glnxa64:/opt/mcr/v91/bin/glnxa64:/opt/mcr/v91/sys/os/glnxa64:
+SPM12 (6906): /opt/spm12/spm12_mcr/spm12
+ ___  ____  __  __                                            
+/ __)(  _ \(  \/  )                                           
+\__ \ )___/ )    (   Statistical Parametric Mapping           
+(___/(__)  (_/\/\_)  SPM12 - http://www.fil.ion.ucl.ac.uk/spm/
+
+ ---> 396c65e5e58a
+Removing intermediate container 22893bf7fcc2
+Step 12/12 : ENTRYPOINT /opt/spm12/spm12
+ ---> Running in d8a43fef3d47
+------------------------------------
+j'essaye avec le docker de flandin
+docker pull spmcentral/spm
+
+ca a l'air de mrcher avec la commande dans /opt/spm12
+sudo ./run_spm12.sh /opt/mcr/v91 fmri
+
+sudo ./run_spm12.sh /opt/mcr/v91 batch /rstp_code/rstp.m
+
+-------------------------------------
+essai dans le wrapper
+eval  ./run_spm12.sh /opt/mcr/v91 script  ${CODEROOT}/rstp.m  ${FLIBASEDIR}   ${ATLASBASEDIR}   ${OUTPUTDIR}
+marche pas mais rentre dans spm no fonction in this contexte
+-------------
+essai de 
+root@98939c16750c:/opt/spm12# ./run_spm12.sh /opt/v91 script /rstp_code/rstp.m
+------------------------------------------
+Setting up environment variables
+---
+LD_LIBRARY_PATH is .:/opt/v91/runtime/glnxa64:/opt/v91/bin/glnxa64:/opt/v91/sys/os/glnxa64:/opt/v91/sys/opengl/lib/glnxa64
+./spm12: error while loading shared libraries: libmwlaunchermain.so: cannot open shared object file: No such file or directory
+
+yum install libXp.x86_64
+
+yum install libmwlaunchermain.x86_64
+
+---------------------------------------
+./run_spm12.sh /homes_unix/hirsch/essai_spm_stand_alone/mcr/v91 batch  batch_renseigne_job.m 
+------------------------------------------
+Setting up environment variables
+---
+LD_LIBRARY_PATH is .:/homes_unix/hirsch/essai_spm_stand_alone/mcr/v91/runtime/glnxa64:/homes_unix/hirsch/essai_spm_stand_alone/mcr/v91/bin/glnxa64:/homes_unix/hirsch/essai_spm_stand_alone/mcr/v91/sys/os/glnxa64:/homes_unix/hirsch/essai_spm_stand_alone/mcr/v91/sys/opengl/lib/glnxa64
+SPM12 (6906): /homes_unix/hirsch/essai_spm_stand_alone/spm12/spm12_mcr/spm12
+ ___  ____  __  __                                            
+/ __)(  _ \(  \/  )                                           
+\__ \ )___/ )    (   Statistical Parametric Mapping           
+(___/(__)  (_/\/\_)  SPM12 - http://www.fil.ion.ucl.ac.uk/spm/
+
+TOP ca marche de lancer des batchs renseigné par le spm standalone
+-----------------------------------------------
+mercredi 15 février
+
+    How to compile the SPM standalone by myself?
+
+TOP vient de wikibooks Have a look at config/spm_make_standalone.m and spm_standalone.m in your SPM installation.
+
+Open MATLAB, at the command line, addpath the spm directory (if not done already), goto the config subdirectory, and run spm_make_standalone. You will need to wait some minutes. Matlab needs either the Signal Processing Toolbox installed, or in spm_make_standalone.m the line with '-N','-p',fullfile(matlabroot,'toolbox','signal') needs to be deleted.
+---------------------------
+solutions:
+ - recompilation du code avec mcr et spm standalaone
+ - passage de batch renseignés
+ - autre ?
+ ----------------------------------
+ la recompile avec fichier rstp_compile_standnalone.sh ne marche pas fait par moi
+ ----------------------------------
+ la recompile avec le fichier rstp_compile- je change juste le SPMHOME pour /homes_unix/hirsch/essai_spm_stand_alone/spm12/spm12_mcr/spm12
+ ----------------------------------
+ essai de compilation avec rstp_v1
+ les argumants sont pour le run homes_unix/hirsch/essai_spm_stand_alone/mcr/v91
+------------------------------
+essai avec le compilateur de l'IDE matlab donc, la MCR /srv/shares/softs/MCR_R2015b/v90
+
+'/homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01', '/homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01/Atlases', 'ouputdir'
+
+./run_rstp.sh /srv/shares/softs/MCR_R2015b/v90  /homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01 /homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01/Atlases  ouputdir
+ca marche pas comme sur docker
+il faut lier le bouzin avec spm12 standalone  -> /homes_unix/hirsch/essai_spm_stand_alone/spm12/spm12_mcr/spm12
+----------------------------------
+lundi 20 janvier
+/homes_unix/hirsch/essai_spm_stand_alone/mcr/v91/
+./run_rstp.sh /homes_unix/hirsch/essai_spm_stand_alone/mcr/v91/  /homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01 /homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01/Atlases  ouputdir
+
+-------------------------------------
+mardi 21 février
+
+je dev la solution 
+   - rstp_make_batch avec creation de fichier batch  sur machine de dev: '/homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01/', '/homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01/Atlases', 'ouputdir'
+
+   - batch2run injecté dans spm standalone
+
+   - rstp_post_batch avec les paramètre sur machine de dev: '/homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01/EPIBOLD' , '/homes_unix/hirsch/_new_pipe/new_data/rstp_results'
+
+ ca marche jusqu'au step 5 segmentation. et, on recupere les resulatst
+
+ ----------------------------------------
+ mercredi 22 février
+
+ j'essaye la version mcr du code avec spm en standalone
+
+ mcc -m hello.m -a ./testdir 
+
+TOP compilation mcr du code
+ mcc -m rstp_make_batch.m -m  xml2struct.m    -a spm_preprocess_template.m
+ mcc -m rstp_post_batch.m
+
+TOP on est en versions R2015b (9.0) 
+
+MCRROOT=/homes_unix/hirsch/essai_spm_stand_alone/mcr/v90
+SPMSAROOT=/homes_unix/hirsch/essai_spm_stand_alone/spm12
+
+--------------
+je met à jour dans le wrapper.sh
+# env var for dev machine
+MCRROOT=/homes_unix/hirsch/essai_spm_stand_alone/mcr/v90
+MCRROOTBIS=/homes_unix/hirsch/essai_spm_stand_alone/mcr2016/v901
+SPMSAROOT=/homes_unix/hirsch/essai_spm_stand_alone/spm12
+CODEROOT=/homes_unix/hirsch/_new_pipe/docker_rstp
+DATAROOT=/homes_unix/hirsch/_new_pipe/dataroot
+
+----------------
+input file c /homes_unix/hirsch/_new_pipe/new_data/data_set.tar.gz
+output dir c /homes_unix/hirsch/_new_pipe/dataroot/results
+-----
+TOP cmd to execute c
+./rstp_preprocess_wrapper.sh /homes_unix/hirsch/_new_pipe/new_data/data_set.tar.gz /homes_unix/hirsch/_new_pipe/dataroot/results
+-----------------------
+PB spm12 ne trouve pas une librairie pb de version mcr
+j'ai re installer une autre version de la mcr: 2016 v901
+On the target computer, append the following to your LD_LIBRARY_PATH environment variable:  /homes_unix/hirsch/essai_spm_stand_alone/mcr2016/v901/runtime/glnxa64:/homes_unix/hirsch/essai_spm_stand_alone/mcr2016/v901/bin/glnxa64:/homes_unix/hirsch/essai_spm_stand_alone/mcr2016/v901/sys/os/glnxa64:
+--------
+marche tjrs pas mais,il faut mettre à jour le fichier de lancement !!!!!
+./run_spm12.sh ${MCRROOTBIS} batch ${CODEROOT}/batch2run.m
+MCRROOTBIS=/homes_unix/hirsch/essai_spm_stand_alone/mcr2016/v901 
+
+
+./run_spm12.sh /homes_unix/hirsch/essai_spm_stand_alone/mcr2016/v901 batch /homes_unix/hirsch/_new_pipe/docker_rstp/batch2run.m
+
+./run_spm12.sh /homes_unix/hirsch/essai_spm_stand_alone/mcr/v90
+
+je me suis encore gouré de version c la mcr 2016b cad v91
+https://fr.mathworks.com/products/compiler/mcr.html
+
+----------------------
+PB docker 
+la solution c 
+You need to include the namespace for Docker Hub to associate it with your account.
+The namespace is the same as your Docker Hub account name.
+You need to rename the image to YOUR_DOCKERHUB_NAME/docker-whale.
+docker tag firstimage YOUR_DOCKERHUB_NAME/firstimage
+---------------------
+ala racine /hirsch j'ai mis un fichier de données bon -> data_set.tar.gz
+le garder mcc -m rstp_make_batch.m -m  xml2struct.m    -a spm_preprocess_template.m
+ mcc -m rstp_post_batch.m
+regarder comment quand on detare, forcer l'ecrasement de du data_set precedent 
+---------------
+nouvelle version de la mcr
+On the target computer, append the following to your LD_LIBRAR./run_spm12.sh /homes_unix/hirsch/essai_spm_stand_alone/mcr/v90Y_PATH environment variable:  /homes_unix/hirsch/essai_spm_stand_alone/mcr2016/v91/runtime/glnxa64:/homes_unix/hirsch/essai_spm_stand_alone/mcr2016/v91/bin/glnxa64:/homes_unix/hirsch/essai_spm_stand_alone/mcr2016/v91/sys/os/glnxa64:
+---
+TOP ca marche
+./run_spm12.sh /homes_unix/hirsch/essai_spm_stand_alone/mcr2016/v91
+
+------------------------
+./rstp_preprocess_wrapper.sh /homes_unix/hirsch/data_set.tar.gz /homes_unix/hirsch/_new_pipe/dataroot/results
+
+------------------------------------
+23 février
+
+essai docker encore raté 
+j'ai fait un dockerfile inspiré par guillume flandin fait pour bids spm marche pas avec msg erreur
+[root@c1d566e0847a spm12]# ./run_spm12.sh /opt/mcr/v91
+------------------------------------------
+Setting up environment variables
+---
+LD_LIBRARY_PATH is .:/opt/mcr/v91/runtime/glnxa64:/opt/mcr/v91/bin/glnxa64:/opt/mcr/v91/sys/os/glnxa64:/opt/mcr/v91/sys/opengl/lib/glnxa64
+SPM12 (6906): /opt/spm/spm12/spm12_mcr/spm12
+Error using axes
+While setting property 'Parent' of class ''Axes'':
+Can't load '/opt/mcr/v91/bin/glnxa64/libmwosgserver.so': libXrandr.so.2: cannot open shared object file: No such file or directory
+
+Error in spm_Welcome (line 41)
+
+
+Error in spm (line 299)
+
+
+Error in spm_standalone (line 71)
+
+MATLAB:dispatcher:loadLibrary
+----------
+essai avec bids/base_spm
+autr erreur mais du même type
+root@9b2431c8e6aa:/opt/mcr# cd /opt/spm12
+root@9b2431c8e6aa:/opt/spm12# ./run_spm12.sh /opt/mcr/v901
+------------------------------------------
+Setting up envir./rstp_preprocess_wrapper.sh /homes_unix/hirsch/_new_pipe/new_data/data_set.tar.gz /homes_unix/hirsch/_new_pipe/dataroot/results  onment variables
+---
+LD_LIBRARY_PATH is .:/opt/mcr/v901/runtime/glnxa64:/opt/mcr/v901/bin/glnxa64:/opt/mcr/v901/sys/os/glnxa64:/opt/mcr/v901/sys/opengl/lib/glnxa64
+SPM12 (12.2): /opt/spm12/spm12_mcr/home/gflandin/spm12
+Can't reload '/opt/mcr/v901/bin/glnxa64/libmwhgbuiltins.so'
+
+Error in spm (line 706)
+
+
+Error in spm_Welcome (line 15)
+
+
+Error in spm (line 299)
+
+
+Error in spm_standalone (line 61)
+
+
+MATLAB:dispatcher:loadLibrary
+-------------------------------------
+TOP ca marche avec un script
+avec docker run --rm -it dspm12
+
+[root@2518e4b52034 spm12]# ls
+run_spm12.sh  spm12  spm12.ctf
+[root@2518e4b52034 spm12]# pwd
+/opt/spm/spm12
+[root@2518e4b52034 spm12]# vi try.m                   
+[root@2518e4b52034 spm12]# ./run_spm12.sh /opt/mcr/v91 script try.m
+------------------------------------------
+Setting up environment variables
+---
+LD_LIBRARY_PATH is .:/opt/mcr/v91/runtime/glnxa64:/opt/mcr/v91/bin/glnxa64:/opt/mcr/v91/sys/os/glnxa64:/opt/mcr/v91/sys/opengl/lib/glnxa64
+SPM12 (6906): /opt/spm/spm12/spm12_mcr/spm12
+ ___  ____  __  __                                            
+/ __)(  _ \(  \/  )                                           
+\__ \ )___/ )   ./rstp_preprocess_wrapper.sh /homes_unix/hirsch/_new_pipe/new_data/data_set.tar.gz /homes_unix/hirsch/_new_pipe/dataroot/results (   Statistical Parametric Mapping           
+(___/(__)  (_/\/\_)  SPM12 - http://www.fil.ion.ucl.ac.uk/spm/
+--------------------------
+on reprend avec rstp
+docker run --rm -it -v /homes_unix/hirsch/t0009.tgz:/root/t0009.tgz docker_rstp_v1
+
+--------------------------
+--------------------------
+DOCKER
+dans un premier temps je vais essayer que le batch batc2run.m et les datas ds 
+docker build  -t docker-rstp .
+docker run --rm -it -v /homes_unix/hirsch/data_set.tar.gz:/rstp_data/data_set.tar.gz docker-rstp
+
+puis, dans le container faire
+./rstp_preprocess_wrapper.sh /rstp_data/data_set.tar.gz /rstp_data
+
+mais il faut que le batch2run corresponde à la config, donc installons mcr V90  R2015b
+dans docker_spm1 ./rstp_preprocess_wrapper.sh /homes_unix/hirsch/_new_pipe/new_data/data_set.tar.gz /homes_unix/hirsch/_new_pipe/dataroot/results2_mcr2  dspm12mcr2
+docker build  -t dspm12mcr2 .
+
+je build rstp audessus de dspm12mcr2
+je run
+je wrappe
+
+----------
+je vais pusher les images de base
+docker tag firstimage YOUR_DOCKERHUB_NAME/firstimage
+docker tag dspm12 thomashirsch/dspm12
+
+-------------------------------
+27 février
+
+on essaye de récupérer tous les résultsts ; pui, on les tar; on les donne à vip par $2
+les param de rstp post batch sont
+'/homes_unix/hir./rstp_preprocess_wrapper.sh /homes_unix/hirsch/_new_pipe/new_data/data_set.tar.gz /homes_unix/hirsch/_new_pipe/dataroot/resultssch/_new_pipe/new_data/data_set/t0009/repos01/EPIBOLD' , '/homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01/T1' ,'/homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01/T2' ,'/homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01/T2star' ,'/homes_unix/hirsch/_new_pipe/new_data/rstp_results'
+
+_________________________________
+La  commande du wrapper devient sur pipeau
+
+./rstp_preprocess_wrapper.sh /homes_unix/hirsch/data_set.tar.gz /homes_unix/hirsch/_new_pipe/dataroot/outputdir
+
+------------------------------
+pour la compiile faire
+mcc -m rstp_make_batch.m -m  xml2struct.m    -a spm_preprocess_template.m
+ mcc -m rstp_post_batch.m
+ TOP la vrai commande est:
+ ./rstp_preprocess_wrapper.sh /homes_unix/hirsch/data_set.tar.gz /homes_unix/hirsch/_new_pipe/outputdir
+
+ git checkout HEAD -- main.c
+ git checkout HEAD -- rstp_make_batch.m
+
+ ------------
+ 28 février
+ tar czf name_of_archive_file.tar.gz name_of_directory_to_tar
+ tar czf res.tar.gz results
+
+ pour récupérer les données il faut rajouter un volume au  container  DOCKER 
+docker build  -t docker-rstp .
+docker run --rm -it -v /homes_unix/hirsch/data_set.tar.gz:/rstp_data/data_set.tar.gz docker-rstp
+new
+docker run --rm -it -v /homes_unix/hirsch/data_set.tar.gz:/rstp_data/data_set.tar.gz -v /homes_unix/hirsch/_new_pipe/outputdir:/outputdir  docker-rstp
+
+puis, dans le container faire
+/rstp_code/rstp_preprocess_wrapper.sh /rstp_data/data_set.tar.gz /outputdir   
+
+docker build  -t thomashirsch/docker-rstp .
+
+docker tag firstimage YOUR_DOCKERHUB_NAME/firstimage
+docker tag thomashirsch/docker-rstp thomashirsch/docker-rstp:v100
+
+docker push thomashirsch/docker-rstp:v100
+
+----------------------
+git push of the data set 
+git remote add origin https://github.com/thomashirsch/test_data.git
+git push -u origin master
+
+-------------------------------
+mail à pascal
+Bonjour Pascal,
+
+J'espère  que tes vacances se sont bien passées. Et, que le retour n'est pas trop dur.
+
+Je comprends très bien si tu as beaucoup de choses à faire le premier jour après vacances...
+Sinon, je suis prêt à commencer l'intégration du pipeline quand tu auras un moment.
+Ci-joint le descripteur associé: rstp_v100.json
+Les images docker sont là:  https://hub.docker.com/u/thomashirsch/    (la troisième thomashirsch/docker-rstp:v100 appelle la seconde qui appelle la première)
+Le code est là: https://github.com/thomashirsch/rstp
+Le tarball de data test est là: https://github.com/thomashirsch/test_data
+
+Je t'envoie la doc cette am.
+Sinon, je dois encore:
+     - améliorer les logs (j'ai de petits soucis sur docker)
+     - valider que les images IRM sont bien traitées
+
+N'hésites pas à m'appeler sur hangout, ou tel (06 09 59 53 47)
+On se retrouve dans tous les cas au daily scrum
+Bonne journée.
+
+Thomas Hirsch
+
+----------------------------------------
+D'après ce que je sais il y a plusieurs façons de faire.
+En voici une simple :
+wrapper.sh 1>> stdout_log.txt 2>> stderr_log.txt  pour rediriger la sortie standard (le "1") vers le fichier "stdout_log.txt", et la sortie d'erreur (le "2") vers le fichier "stderr_log.txt"
+
+Tu peux aussi utiliser des variables pour désigner tes fichiers de sortie.
+Par exemple :
+wrapper.sh 1>>${stdout_log} 2>> ${stderr_log}
+
+Voici un lien parmi d'autres : http://www.commentcamarche.net/faq/4801-guide-d-utilisation-du-shell-pour-debutant#xxx-les-redirections-et-les-pipelines
+Un autre lien vers une doc plus fouillée mais qui date de 2012 :  https://abs.traduc.org/abs-fr/ch20.html
+------
+docker run --rm -it -v /homes_unix/hirsch/data_set.tar.gz:/rstp_data/data_set.tar.gz -v /homes_unix/hirsch/_new_pipe/outputdir:/outputdir  docker-rstp
+je vais essayer
+/rstp_code/rstp_preprocess_wrapper.sh /rstp_data/data_set.tar.gz /outputdir   1>> /rstp_code/rstp_preprocess_wrapper_std.log 2>> /rstp_code/rstp_preprocess_wrapper_err.log
+
+-----------------
+28 février 18h53
+docker build  -t thomashirsch/docker-rstp:v101 .
+
+docker run --rm -it -v /homes_unix/hirsch/data_set.tar.gz:/rstp_data/data_set.tar.gz -v /homes_unix/hirsch/_new_pipe/outputdir:/outputdir  thomashirsch/docker-rstp:v101
+
+/rstp_code/rstp_preprocess_wrapper.sh /rstp_data/data_set.tar.gz /outputdir >> /outputdir/rstp_preprocess_wrapper.log
+
+docker push thomashirsch/docker-rstp:v101
+
+--------------------
+1 mars
+recuperation de tous les fichiers results epibold, T1, T2, T2*
+sur rstp_post_batch on avait le run avec les args suivants
+'/homes_unix/hirsch/_new_pipe/dataroot/data_set/t0009/repos01/EPIBOLD' , '/homes_unix/hirsch/_new_pipe/dataroot/data_set/t0009/repos01/T1' ,'/homes_unix/hirsch/_new_pipe/dataroot/data_set/t0009/repos01/T2' ,'/homes_unix/hirsch/_new_pipe/dataroot/data_set/t0009/repos01/T2star' ,'/homes_unix/hirsch/_new_pipe/dataroot/rstp_results'
+il fautle faire maintenant sur 
+>> rstp_post_batch('/homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01/EPIBOLD' , '/homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01/T1' ,'/homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01/T2' ,'/homes_unix/hirsch/_new_pipe/new_data/data_set/t0009/repos01/T2star' ,'/homes_unix/hirsch/_new_pipe/new_data/rstp_results')
+
+>> rstp_post_batch('/homes_unix/hirsch/_new_pipe/dataroot/data_set/t0009/repos01/EPIBOLD' , '/homes_unix/hirsch/_new_pipe/dataroot/data_set/t0009/repos01/T1' ,'/homes_unix/hirsch/_new_pipe/dataroot/data_set/t0009/repos01/T2' ,'/homes_unix/hirsch/_new_pipe/dataroot/data_set/t0009/repos01/T2star' ,'/homes_unix/hirsch/_new_pipe/dataroot/results')
+K>>
+----------------------
+puis docker
+docker build  -t thomashirsch/docker-rstp:v102 .
+
+docker run --rm -it -v /homes_unix/hirsch/data_set.tar.gz:/rstp_data/data_set.tar.gz -v /homes_unix/hirsch/_new_pipe/outputdir:/outputdir  thomashirsch/docker-rstp:v102
+puis, dans le container
+/rstp_code/rstp_preprocess_wrapper.sh /rstp_data/data_set.tar.gz /outputdir

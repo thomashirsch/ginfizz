@@ -1,0 +1,35 @@
+{
+	"name" : "Resting_state_connectivity_pipeline",
+	"tool-version" : "2.0.1",
+	"description" : "Automated FMRI tool to analyse the resting state",
+	"command-line" : "/rstp_code/ginfizz_wrapper.sh [INPUTFILE] >> /rstp_data/ginfizz.log",
+	"docker-image": "thomashirsch/docker-ginfizz:v201",
+    "docker-index": "http://index.docker.io",
+	"schema-version" : "0.2",
+	"inputs" : [
+		{
+			"id" : "infile",
+			"name" : "Input file",
+			"type" : "File",
+			"description" : "Input structural and fonctionnal images tarball (e.g. <file>.tgz with rigid structure, see user documentation)",
+			"optional": false,
+			"command-line-key" : "[INPUTFILE]"
+		}
+	],
+  	"output-files" : [
+		{
+			"id" : "logfile",
+			"name" : "Log file",
+			"description" : "The output log file from the example tool",
+			"path-template" : "/rstp_data/ginfizz.log",
+			"optional" : true
+		},
+		{
+			"id" : "outputfile",
+			"name" : "Output file",    	
+			"path-template" : "/rstp_data/data_results.tar.gz",
+			"description" : "Output tarball File (e.g. <file>.tgz with rigid structure)",
+			"optional" : true
+		}
+	]			
+ }

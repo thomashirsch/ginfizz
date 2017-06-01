@@ -1,0 +1,62 @@
+170512-12:54:36,543 workflow INFO:
+	 ['check', 'execution', 'logging']
+170512-12:55:05,385 workflow INFO:
+	 Running serially.
+170512-12:55:05,388 workflow INFO:
+	 Executing node filesource in dir: /tmp/tmpxK_TD4/connectivity/filesource
+170512-12:55:05,426 workflow INFO:
+	 Runtime memory and threads stats unavailable
+170512-12:55:05,442 workflow INFO:
+	 Executing node IdentifyRegions in dir: /tmp/tmp8hyZO3/connectivity/IdentifyRegions
+[1 2]
+170512-12:55:06,41 workflow INFO:
+	 Executing node addFiles in dir: /tmp/tmpVZ8aYj/connectivity/addFiles
+170512-12:55:06,55 workflow INFO:
+	 Running: fslmaths /scratch/user/hirsch/datadir4/data_results_py/structural/normalized_files/wc1t0009_t1_s03.nii -add /scratch/user/hirsch/datadir4/data_results_py/structural/normalized_files/wc2t0009_t1_s03.nii /tmp/tmpVZ8aYj/connectivity/addFiles/wc1t0009_t1_s03_maths.nii -odt short
+170512-12:55:07,209 workflow INFO:
+	 Executing node thrFile in dir: /tmp/tmphQpXyf/connectivity/thrFile
+170512-12:55:07,219 workflow INFO:
+	 Running: fslmaths /tmp/tmpVZ8aYj/connectivity/addFiles/wc1t0009_t1_s03_maths.nii -thr 0.2000000000 /tmp/tmphQpXyf/connectivity/thrFile/wc1t0009_t1_s03_maths_thresh.nii
+170512-12:55:08,343 workflow INFO:
+	 Executing node regMeants in dir: /tmp/tmpOOWKGL/connectivity/regMeants
+170512-12:55:08,361 workflow INFO:
+	 Executing node _regMeants0 in dir: /tmp/tmpOOWKGL/connectivity/regMeants/mapflow/_regMeants0
+170512-12:55:08,383 workflow INFO:
+	 Running: fslmeants -i /scratch/user/hirsch/datadir4/data_results_py/functionnal/arima/arimaResidus/_report/arima_residu.nii.gz -m /tmp/tmp8hyZO3/connectivity/IdentifyRegions/region_image1.nii --order=1 -o /tmp/tmpOOWKGL/connectivity/regMeants/mapflow/_regMeants0/arima_residu_ts.txt
+170512-12:55:14,837 workflow INFO:
+	 Executing node _regMeants1 in dir: /tmp/tmpOOWKGL/connectivity/regMeants/mapflow/_regMeants1
+170512-12:55:14,849 workflow INFO:
+	 Running: fslmeants -i /scratch/user/hirsch/datadir4/data_results_py/functionnal/arima/arimaResidus/_report/arima_residu.nii.gz -m /tmp/tmp8hyZO3/connectivity/IdentifyRegions/region_image2.nii --order=1 -o /tmp/tmpOOWKGL/connectivity/regMeants/mapflow/_regMeants1/arima_residu_ts.txt
+170512-12:55:21,378 workflow INFO:
+	 Executing node correlationsComputeNode in dir: /tmp/tmpRAxw3H/connectivity/correlationsComputeNode
+170512-12:55:21,884 workflow ERROR:
+	 ['Node correlationsComputeNode failed to run on host pipeau.dgin.bor.']
+170512-12:55:21,884 workflow INFO:
+	 Saving crash info to /homes_unix/hirsch/ginfizz/src/crash-20170512-125521-hirsch-correlationsComputeNode-232297da-61e0-406f-91db-d76bd5de31e5.pklz
+170512-12:55:21,885 workflow INFO:
+	 Traceback (most recent call last):
+  File "/srv/shares/softs/anaconda2/lib/python2.7/site-packages/nipype/pipeline/plugins/linear.py", line 39, in run
+    node.run(updatehash=updatehash)
+  File "/srv/shares/softs/anaconda2/lib/python2.7/site-packages/nipype/pipeline/engine/nodes.py", line 394, in run
+    self._run_interface()
+  File "/srv/shares/softs/anaconda2/lib/python2.7/site-packages/nipype/pipeline/engine/nodes.py", line 504, in _run_interface
+    self._result = self._run_command(execute)
+  File "/srv/shares/softs/anaconda2/lib/python2.7/site-packages/nipype/pipeline/engine/nodes.py", line 630, in _run_command
+    result = self._interface.run()
+  File "/srv/shares/softs/anaconda2/lib/python2.7/site-packages/nipype/interfaces/base.py", line 1034, in run
+    runtime = self._run_wrapper(runtime)
+  File "/srv/shares/softs/anaconda2/lib/python2.7/site-packages/nipype/interfaces/base.py", line 991, in _run_wrapper
+    runtime = self._run_interface(runtime)
+  File "/srv/shares/softs/anaconda2/lib/python2.7/site-packages/nipype/interfaces/utility.py", line 496, in _run_interface
+    raise out
+ValueError: could not convert string to float: /tmp/tmpOOWKGL/connectivity/regMeants/mapflow/_regMeants0/arima_residu_ts.txt
+Interface Function failed to run. 
+
+170512-12:55:21,911 workflow INFO:
+	 ***********************************
+170512-12:55:21,911 workflow ERROR:
+	 could not run node: connectivity.correlationsComputeNode
+170512-12:55:21,911 workflow INFO:
+	 crashfile: /homes_unix/hirsch/ginfizz/src/crash-20170512-125521-hirsch-correlationsComputeNode-232297da-61e0-406f-91db-d76bd5de31e5.pklz
+170512-12:55:21,911 workflow INFO:
+	 ***********************************

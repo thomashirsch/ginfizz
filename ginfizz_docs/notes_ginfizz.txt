@@ -1,5 +1,364 @@
 notes pipype
 
+----------------
+1 juin
+from __future__ import division, unicode_literals
+from builtins import open, range, str
+
+import numpy as np
+import scipy as sp
+import nibabel as nib
+from nipype.utils.config import NUMPY_MMAP
+
+imports = ['import os',
+           'import nibabel as nib',
+           'import numpy as np',
+           'import scipy as sp',
+           'from nipype.utils.filemanip import filename_to_list, list_to_filename, split_filename',
+           'from scipy.special import legendre'
+]
+
+
+
+------------------
+le pb c'était un bug python 2.7 il fallait faire un str dans le fmt du savetext
+on a re eu le pb {'node': restingState.prebandpass.buildNuisanceTable, 'traceback': ['Traceback (most recent call last):\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/pipeline/plugins/linear.py", line 43, in run\n    node.run(updatehash=updatehash)\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/pipeline/engine/nodes.py", line 366, in run\n    self._run_interface()\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/pipeline/engine/nodes.py", line 476, in _run_interface\n    self._result = self._run_command(execute)\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/pipeline/engine/nodes.py", line 607, in _run_command\n    result = self._interface.run()\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/interfaces/base.py", line 1085, in run\n    runtime = self._run_wrapper(runtime)\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/interfaces/base.py", line 1033, in _run_wrapper\n    runtime = self._run_interface(runtime)\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/interfaces/utility.py", line 498, in _run_interface\n    out = function_handle(**args)\n', '  File "<string>", line 16, in mergeTables\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/numpy/lib/npyio.py", line 1143, in savetxt\n    raise ValueError(\'invalid fmt: %r\' % (fmt,))\n', "ValueError: invalid fmt: u'%.10f'\nInterface Function failed to run. \n"]}
+
+
+-----------------------
+on a tout intégré et on passe au docker
+outputdir va être /scratch/user/hirsch/datadir7
+le dataset est /homes_unix/hirsch/ginfizz/data_test/data_set.tar.gz
+donc le test sous pipeau seul devient
+./ginfizz_wrapper_pipeau.sh /homes_unix/hirsch/ginfizz/data_test/data_set.tar.gz  /scratch/user/hirsch/datadir7
+---------------------------
+
+je modifie le docker
+---------------------------
+aujourd'hui les commandes deviennent
+puis docker
+
+docker build  -t thomashirsch/docker-ginfizz:v201 .
+j'ai créé un datadir8
+
+docker run --rm -it -v /homes_unix/hirsch/ginfizz/data_test/data_set.tar.gz:/rstp_data/data_set.tar.gz -v /scratch/user/hirsch/datadir8:/outputdir  thomashirsch/docker-ginfizz:v201
+puis, dans le container
+/rstp_code/ginfizz_wrapper.sh /rstp_data/data_set.tar.gz /outputdir   >>  /rstp_code/ginfizz.log
+/rstp_code/ginfizz_wrapper.sh /rstp_data/data_set.tar.gz /outputdir   >>  /rstp_data/ginfizz.log
+
+--------------------
+-------------------------
+>>> import gzip
+>>> import pickle
+>>> f = gzip.open('/rstp_code/crash-20170531-083037-root-computeMoco-ebdb8892-1e2d-4ace-8204-8e5796109957.pklz')
+>>> x = pickle.load(f)
+>>> print x
+{'node': restingState.prebandpass.computeMoco, 'traceback': ['Traceback (most recent call last):\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/pipeline/plugins/linear.py", line 43, in run\n    node.run(updatehash=updatehash)\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/pipeline/engine/nodes.py", line 366, in run\n    self._run_interface()\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/pipeline/engine/nodes.py", line 476, in _run_interface\n    self._result = self._run_command(execute)\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/pipeline/engine/nodes.py", line 607, in _run_command\n    result = self._interface.run()\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/interfaces/base.py", line 1085, in run\n    runtime = self._run_wrapper(runtime)\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/interfaces/base.py", line 1033, in _run_wrapper\n    runtime = self._run_interface(runtime)\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/interfaces/utility.py", line 498, in _run_interface\n    out = function_handle(**args)\n', '  File "<string>", line 24, in computeMoco\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/numpy/lib/npyio.py", line 1143, in savetxt\n    raise ValueError(\'invalid fmt: %r\' % (fmt,))\n', "ValueError: invalid fmt: u'%.10f'\nInterface Function failed to run. \n"]}
+>>> 
+
+--------------
+31 mai
+>>> import gzip
+>>> import pickle
+>>> f = gzip.open('/rstp_code/crash-20170530-180050-root-computeMoco-4153c594-fe47-45a1-9eb7-a17d024d9a7a.pklz')
+>>> x = pickle.load(f)
+>>> print x
+{'node': restingState.prebandpass.computeMoco, 'traceback': ['Traceback (most recent call last):\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/pipeline/plugins/linear.py", line 43, in run\n    node.run(updatehash=updatehash)\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/pipeline/engine/nodes.py", line 366, in run\n    self._run_interface()\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/pipeline/engine/nodes.py", line 476, in _run_interface\n    self._result = self._run_command(execute)\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/pipeline/engine/nodes.py", line 607, in _run_command\n    result = self._interface.run()\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/interfaces/base.py", line 1085, in run\n    runtime = self._run_wrapper(runtime)\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/interfaces/base.py", line 1033, in _run_wrapper\n    runtime = self._run_interface(runtime)\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/interfaces/utility.py", line 498, in _run_interface\n    out = function_handle(**args)\n', '  File "<string>", line 18, in computeMoco\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/pandas/core/frame.py", line 1383, in to_csv\n    formatter.save()\n', '  File "/opt/conda/envs/python2/lib/python2.7/site-packages/pandas/formats/format.py", line 1473, in save\n    self.writer = csv.writer(f, **writer_kwargs)\n', 'TypeError: "delimiter" must be string, not unicode\nInterface Function failed to run. \n']}
+
+
+
+-------------------------
+30 mai
+pb sur les noms des masks pour calculer les correlations
+_mask_..homes_unix..hirsch..ginfizz..src..region_image1.nii
+
+30 mai
+pour essayer de corriger le bug j'ai esssayé de sortir les fcts à l'intérieur de compute_moco vers l'extérieur
+essayons????
+----------------------------
+bug 
+
+170529-16:59:39,739 workflow DEBUG:
+	 saved results in /rstp_data/results/_report/restingState/prebandpass/computeMoco/result_computeMoco.pklz
+170529-16:59:39,739 workflow ERROR:
+	 [u'Node computeMoco failed to run on host 6f250e9d33bc.']
+170529-16:59:39,747 workflow INFO:
+	 Saving crash info to /rstp_code/crash-20170529-165939-root-computeMoco-e7471924-0807-46f1-b3a8-ca756a26eb7d.pklz
+170529-16:59:39,747 workflow INFO:
+	 Traceback (most recent call last):
+  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/pipeline/plugins/linear.py", line 43, in run
+    node.run(updatehash=updatehash)
+  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/pipeline/engine/nodes.py", line 366, in run
+    self._run_interface()
+  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/pipeline/engine/nodes.py", line 476, in _run_interface
+    self._result = self._run_command(execute)
+  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/pipeline/engine/nodes.py", line 607, in _run_command
+    result = self._interface.run()
+  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/interfaces/base.py", line 1085, in run
+    runtime = self._run_wrapper(runtime)
+  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/interfaces/base.py", line 1033, in _run_wrapper
+    runtime = self._run_interface(runtime)
+  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/interfaces/utility.py", line 450, in _run_interface
+    self.imports)
+  File "/opt/conda/envs/python2/lib/python2.7/site-packages/nipype-0.13.0rc1-py2.7.egg/nipype/utils/misc.py", line 102, in create_function_from_sour
+ce
+    raise_from(RuntimeError(msg), e)
+  File "/opt/conda/envs/python2/lib/python2.7/site-packages/future/utils/__init__.py", line 454, in raise_from
+    raise e
+RuntimeError: 
+Error executing function:
+ def computeMoco(mocoFile):
+    import pandas as pd
+    import numpy as np
+    import os
+
+    import ginfizz_config
+
+    ##---------------------------------------------------------------------------------------
+    #
+    #        UTILS functions
+    #
+    ##---------------------------------------------------------------------------------------
+
+
+    def vectorDerivative(v):
+        dv = {}
+        for i in range(ginfizz_config.AcqNb):
+            # print mocodf['x'][i]
+            if i== 0:
+                dv[i]= 0
+            elif i== ginfizz_config.AcqNb-1:
+                dv[i]= v[i]-v[i-1]
+            else:
+                dv[i]= v[i]-v[i-1]
+                #print 'derivative' + str(i)
+                #print  v[i]
+        return v
+
+    def plusDerivative(df):
+        lg = len(df.columns.values)
+        dg = df
+        for j in list(df.columns.values):
+            vprime = vectorDerivative(df[j])
+            dg[lg+j]=vprime
+        return dg
+
+    def plusSquare(df):
+        lg = len(df.columns.values)
+        ds = df
+        for j in range(6):
+            print j
+            vs = df[j]**2
+            ds[lg+j]=vs
+        return ds    
+
+    # end utils
+
+    # read the moco file to put it in a panda dataframe 
+    mocodf = pd.read_csv(mocoFile, header=None, sep='  ',engine='python')
+    print(mocodf.head())
+
+    # first, we derivate the 6 colunms of dataframe of moco file, and append the 6 new colums to df
+    dfderivate = plusDerivative(mocodf)
+    print(dfderivate.head())
+
+    # then, we compute the square of the 6 first colums, and append them to df. it makes 18 colums that are going to 
+    # participate in the ortho file to make 18 regressors bandpassed
+    dfsquare = plusSquare(dfderivate)
+
+    g = dfsquare.to_csv('ortho.txt', sep=' ',index=False, header=False)
+    print g
+    h = os.getcwd() + '/' + 'ortho.txt'
+    return h
+
+Functions in connection strings have to be standalone.
+They cannot be declared either interactively or inside
+another function or inline in the connect string. Any
+imports should be done inside the function
+Interface Function failed to run. 
+
+
+
+----------------------------
+29mai
+
+on a tout intégré et on passe au docker
+outputdir va être /scratch/user/hirsch/datadir7
+le dataset est /homes_unix/hirsch/ginfizz/data_test/data_set.tar.gz
+donc le test sous pipeau seul devient
+./ginfizz_wrapper_pipeau.sh /homes_unix/hirsch/ginfizz/data_test/data_set.tar.gz  /scratch/user/hirsch/datadir7
+---------------------------
+
+je modifie le docker
+---------------------------
+aujourd'hui les commandes deviennent
+puis docker
+
+docker build  -t thomashirsch/docker-ginfizz:v201 .
+j'ai créé un datadir8
+
+docker run --rm -it -v /homes_unix/hirsch/ginfizz/data_test/data_set.tar.gz:/rstp_data/data_set.tar.gz -v /scratch/user/hirsch/datadir8:/outputdir  thomashirsch/docker-ginfizz:v201
+puis, dans le container
+/rstp_code/ginfizz_wrapper.sh /rstp_data/data_set.tar.gz /outputdir   >>  /rstp_code/ginfizz.log
+/rstp_code/ginfizz_wrapper.sh /rstp_data/data_set.tar.gz /outputdir   >>  /rstp_data/ginfizz.log
+
+
+--------------------------------
+sous pipeau la commande à faire
+./ginfizz_wrapper.sh   /scratch/user/hirsch/datadir/data_set.tar.gz   /scratch/user/hirsch/datadir7
+------------------------
+avant la commande docker était
+
+puis docker
+
+docker run --rm -it -v /scratch/user/hirsch/datadir/data_set.tar.gz:/rstp_data/data_set.tar.gz -v /scratch/user/hirsch/datadirdocker:/outputdir  thomashirsch/docker-ginfizz:v101
+puis, dans le container
+/rstp_code/ginfizz_wrapper.sh /rstp_data/data_set.tar.gz /outputdir   >>  /rstp_code/ginfizz.log
+/rstp_code/ginfizz_wrapper.sh /rstp_data/data_set.tar.gz /outputdir   >>  /rstp_data/ginfizz.log
+
+
+--------------------------------
+sous pipeau la commande à faire
+./ginfizz_wrapper.sh   /scratch/user/hirsch/datadir/data_set.tar.gz   /scratch/user/hirsch/datadirp
+
+----------------------------
+---------------------------
+23 mai
+
+cmd de lancement du main    je rajoute l atlas roi
+
+'/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh' '/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91' '/scratch/user/hirsch/datadir/data_set/t0009/repos01' '/scratch/user/hirsch/datadir/data_set/t0009/repos01/Atlases/TPM.nii'  '/scratch/user/hirsch/datadir/data_set/t0009/repos01/ROIAtlases/atlas_2reg.nii'   '/scratch/user/hirsch/datadir6/data_results_wing' 
+--------------------
+
+------------
+    spm_standalone =  sys.argv[1] 
+    mcr =  sys.argv[2] 
+    flibasedir  =  sys.argv[3]
+    atlasfile  =  sys.argv[4]
+    roiatlasfile =  sys.argv[5]
+    resultdir =  sys.argv[6]
+
+
+
+---------------------------
+historique band pass
+# de v1 à v2 on introduit les masks wm et csf et les meants <br>
+# de v2 à v3 on plot les mocos, on wrappe le code python, on wrappe le code mathlab bramilla. on refait tout le pipeline <br>
+# de v3 à v4 on change les premier et dernier noeud en identity interfacepour se brancher direct sur le proprocess pipeline <br>
+# v5 au retour de hackfest on change les dérivées t - (t-1) <br>
+# on fait pour les regresseurs R R' R2 plus les 3 tissus dependants soit 21 regresseurs <br>
+# v6 on prend les résultats obtenus avec le preprocess corrigé <br>
+# v7 le preprocess a été changé imagecalculator est passé de nibabel à fslmaths <br>
+# v8 on re introduit le data sink
+# 
+
+# # To calculate parameters for afni bandpass function and write them in ortho file.txt
+# 
+
+-----------------------------
+18 mai 2017
+
+cmd de lancement du main
+
+'/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh' '/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91' '/scratch/user/hirsch/datadir/data_set/t0009/repos01' '/scratch/user/hirsch/datadir/data_set/t0009/repos01/Atlases/TPM.nii'  '/scratch/user/hirsch/datadir5/data_results_py' 
+-----------------------------
+15 mai 2017
+
+reshape tout 
+     - avec un main
+     - des logs
+     - un bon passage de parametres
+
+----------------
+les param étaient:
+'/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh' '/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91' '/scratch/user/hirsch/datadir/data_set/t0009/repos01' '/scratch/user/hirsch/datadir/data_set/t0009/repos01/Atlases/TPM.nii'  '/scratch/user/hirsch/datadir4/data_results_py' 
+
+-------------
+ils deviennent  -> on pass à datadir5
+'/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh' '/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91' '/scratch/user/hirsch/datadir/data_set/t0009/repos01' '/scratch/user/hirsch/datadir/data_set/t0009/repos01/Atlases/TPM.nii'  '/scratch/user/hirsch/datadir5/data_results_py' 
+
+-------------------
+bug correlation compute 
+le pb c'est que je dois pas utiliser un map node avec iterfield
+mais des nodes normaux avec iterfield cf http://nipype.readthedocs.io/en/latest/users/mapnode_and_iterables.html
+est-ce que je peux avoirun iterable dynamic
+
+
+------------
+import nipype.pipeline.engine as pe
+a = pe.Node(interface=A(), name="a")
+b = pe.Node(interface=B(), name="b")
+b.iterables = ("n", [1, 2, 3])
+c = pe.Node(interface=C(), name="c")
+
+my_workflow = pe.Workflow(name="my_workflow")
+my_workflow.connect([(a,b,[('out_file','in_file')]),
+                     (b,c,[('out_file','in_file')])
+                     ])
+-------------------
+4 mai 2017
+
+-------------------
+pour lancer arima
+
+ '/scratch/user/hirsch/datadir4/data_results_py'   '/scratch/user/hirsch/datadir4/data_results_py' 
+
+--------------------
+pour lancer ginfizz_bandpass
+
+'/scratch/user/hirsch/datadir4/data_results_py/structural/normalized_files' '/scratch/user/hirsch/datadir4/data_results_py/functionnal/normalized_files' '/scratch/user/hirsch/datadir4/data_results_py/functionnal/realignment_parameters'  '/scratch/user/hirsch/datadir4/data_results_py' 
+
+
+
+
+
+----------------------
+
+#sourcedir = '/scratch/user/hirsch/datadir4/data_results_py/structural/normalized_files'
+    # second the merged functionnal file
+    #sourcemergeddir = '//scratch/user/hirsch/datadir4/data_results_py/functionnal/normalized_files'
+    #funcdir = '/scratch/user/hirsch/datadir4/data_results_py/functionnal/realignment_parameters'
+----------------
+# input node get the good files first the tissues normalised files
+# the files to merge arein /scratch/user/hirsch/datadir/data_results/functionnal
+sourcedir = '/scratch/user/hirsch/datadir4/data_results_py/structural/normalized_files'
+# second the merged functionnal file
+sourcemergeddir = '//scratch/user/hirsch/datadir4/data_results_py/functionnal/normalized_files'
+funcdir = '/scratch/user/hirsch/datadir4/data_results_py/functionnal/realignment_parameters'
+
+-----------------------------
+27 avril 
+
+je vais normaliser le coregisterd source cad le cmean il faut faire une liste 
+
+-----------------------------
+26 avril
+
+plutôt
+'/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh' '/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91' '/scratch/user/hirsch/datadir/data_set/t0009/repos01' '/scratch/user/hirsch/datadir/data_set/t0009/repos01/Atlases/TPM.nii'  '/scratch/user/hirsch/datadir4/data_results_py' 
+
+test spm ->
+'/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh' '/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91' '/scratch/user/hirsch/datadir/data_set/t0009/repos01' '/scratch/user/hirsch/datadir/data_set/t0009/repos01/Atlases/TPM.nii'  '/scratch/user/hirsch/datadir4/data_results_py_test_spm' 
+
+
+
+
+nouveau test avec mon pipe et le fichier de marc c1c2T1.nii
+cmd de wing ide était ['/homes_unix/hirsch/ginfizz/src/ginfizz_preprocess.py', '/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh', '/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91', '/scratch/user/hirsch/datadir/data_set/t0009/repos01', '/scratch/user/hirsch/datadir/data_set/t0009/repos01/Atlases/TPM.nii', '/scratch/user/hirsch/datadir4/data_results_py']
+
+elle devient
+['/homes_unix/hirsch/ginfizz/src/ginfizz_preprocess.py', '/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh', '/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91', '/scratch/user/hirsch/datadir/data_set/t0009/repos01', '/scratch/user/hirsch/datadir/data_set/t0009/repos01/Atlases/TPM.nii', '/scratch/user/hirsch/datadir4/data_results_py_test_spm']
+
+je mets le fichier dans T1 il suffit de changer file source et la coreg T1>c1c2T1.nii
+
+
+
+------------------------------
+5 avril 2017
+
+'/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh' '/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91' '/scratch/user/hirsch/datadir/data_set/t0009/repos01' '/homes_unix/hirsch/_pypipe/datadir/data_set/t0009/repos01/Atlases/TPM.nii'  '/scratch/user/hirsch/datadir/data_results_py'
+-------------------------------
+
 21 mars 2017
 
 docker
@@ -12,7 +371,7 @@ puis docker
 docker run --rm -it -v /scratch/user/hirsch/datadir/data_set.tar.gz:/rstp_data/data_set.tar.gz -v /scratch/user/hirsch/datadirdocker:/outputdir  thomashirsch/docker-ginfizz:v101
 puis, dans le container
 /rstp_code/ginfizz_wrapper.sh /rstp_data/data_set.tar.gz /outputdir   >>  /rstp_code/ginfizz.log
-
+/rstp_code/ginfizz_wrapper.sh /rstp_data/data_set.tar.gz /outputdir   >>  /rstp_data/ginfizz.log
 
 
 --------------------------------
@@ -177,5 +536,27 @@ wmTs.inputs.output_type = 'NIFTI_GZ'
 wmTs.inputs.terminal_output = 'stream'     
 func2.connect(onePassMerge, "merged_file", wmTs, "in_file")     
 func2.connect(inputNode, "wmMask", wmTs, "mask")
+
+-----------------------------------------------
+bug du 3 avril
+
+RuntimeError: Command:
+3dBandpass -prefix wcrat0009_epi_s04_d0001_merged_bp.nii.gz -ort /tmp/tmpsU0qfS/prebandpass/computeMoco/ortho.txt /tmp/tmpAkrD8s/prebandpass/wmMeants/wcrat0009_epi_s04_d0001_merged_ts.txt /tmp/tmp3667iq/prebandpass/csfMeants/wcrat0009_epi_s04_d0001_merged_ts.txt 0.005000 0.200000 /tmp/tmpIheGEy/prebandpass/afniBandpass/wcrat0009_epi_s04_d0001_merged.nii.gz
+Standard output:
+
+Standard error:
+++ 3dBandpass: AFNI version=AFNI_16.0.00 (Jan  1 2016) [64-bit]
+++ Authored by: RW Cox
+** FATAL ERROR: Can't open dataset '0.005000'
+** Program compile date = Jan  1 2016
+Return code: 1
+Interface Bandpass failed to run. 
+
+INFO:workflow:Executing node MotionCorrectionPlot1 in dir: /tmp/tmpv85loc/prebandpass/MotionCorrectionPlot1
+INFO:workflow:Running: fsl_tsplot -i /scratch/user/hirsch/datadir/data_results/functionnal/rp_at0009_epi_s04_d0001.txt -o /scratch/user/hirsch/datadir/data_results/functionnal/rp_at0009_epi_s04_d0001_rot.png -h 500 -w 1000 -t 'Realign estimated rotations (radians)' --start=4 --finish=6 -a x,y,z
+INFO:workflow:***********************************
+ERROR:workflow:could not run node: prebandpass.afniBandpass
+INFO:workflow:crashfile: /homes_unix/hirsch/_ipnotebooks/crash-20170403-184839-hirsch-afniBandpass-18dacd6a-a870-4c8e-82a7-e7948b9ce756.pklz
+INFO:workflow:***********************************
 
 

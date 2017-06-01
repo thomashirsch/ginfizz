@@ -1,0 +1,78 @@
+['/homes_unix/hirsch/ginfizz/src/ginfizz_preprocess.py', '/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/spm12/run_spm12.sh', '/homes_unix/hirsch/historique_fli_iam/essai_spm_stand_alone/mcr2016/v91', '/scratch/user/hirsch/datadir/data_set/t0009/repos01', '/homes_unix/hirsch/_pypipe/datadir/data_set/t0009/repos01/Atlases/TPM.nii', '/scratch/user/hirsch/datadir/data_results_py']
+/scratch/user/hirsch/datadir/data_set/t0009/repos01/xml_example.xml
+RS_analysis
+EPIBOLD
+EPIBOLD
+bold-dataset
+
+     
+parameters
+2
+{'sliceTimingVector': '1 3 5 7 9 11 13 15 17 19 21 23 25 27 29 31 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30', 'dynamics': '240', 'nb_slices': '31', 'TR': '2', 'epidir': 'EPIBOLD'}
+exception
+T1/t0009_t1_s03.nii
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+[1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
+1.93548387097
+170404-20:17:37,887 workflow INFO:
+	 ['check', 'execution', 'logging']
+170404-20:17:37,936 workflow INFO:
+	 Running serially.
+170404-20:17:37,937 workflow INFO:
+	 Executing node filesource in dir: /tmp/tmpBEX2Bk/preproc/filesource
+170404-20:17:38,34 workflow INFO:
+	 Runtime memory and threads stats unavailable
+170404-20:17:38,74 workflow INFO:
+	 Executing node st in dir: /tmp/tmp3UtKF1/preproc/st
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+170404-20:19:17,268 workflow INFO:
+	 Runtime memory and threads stats unavailable
+170404-20:19:17,337 workflow INFO:
+	 Executing node realign in dir: /tmp/tmpqN70e8/preproc/realign
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+170404-20:22:06,27 workflow INFO:
+	 Runtime memory and threads stats unavailable
+170404-20:22:06,59 workflow INFO:
+	 Executing node segment in dir: /tmp/tmpwh8es9/preproc/segment
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+170404-20:29:21,115 workflow INFO:
+	 Runtime memory and threads stats unavailable
+170404-20:29:21,151 workflow INFO:
+	 Executing node norm12bis in dir: /tmp/tmp4sbBuw/preproc/norm12bis
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+170404-20:34:39,162 workflow INFO:
+	 Runtime memory and threads stats unavailable
+170404-20:34:39,239 workflow INFO:
+	 Executing node computeStructuralImage in dir: /tmp/tmpSeeDao/preproc/computeStructuralImage
+170404-20:34:42,743 workflow INFO:
+	 Executing node coregister in dir: /tmp/tmpgdIiEH/preproc/coregister
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+170404-20:36:39,664 workflow INFO:
+	 Runtime memory and threads stats unavailable
+170404-20:36:39,737 workflow INFO:
+	 Executing node norm12 in dir: /tmp/tmpeI7obW/preproc/norm12
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+stty: entrée standard: Ioctl() inappropré pour un périphérique
+170404-20:43:49,459 workflow INFO:
+	 Runtime memory and threads stats unavailable
+170404-20:43:49,928 workflow INFO:
+	 Executing node datasink in dir: /tmp/tmpxMc2U9/preproc/datasink
+170404-20:43:55,646 workflow INFO:
+	 Runtime memory and threads stats unavailable
