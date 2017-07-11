@@ -10,7 +10,7 @@
 MCRROOT=/opt/mcr/v91/
 SPMSAROOT=/opt/spm12/run_spm12.sh
 CODEROOT=/rstp_code
-DATAROOT=/rstp_data
+DATAROOT=/gasw-execution-dir/rstp_data
 
 
 
@@ -147,7 +147,7 @@ info "1 - python ginfizz_main sent") &&
   
   info  "we are sending the tar fct for the following repository"
   
-  tar czf ${OUTPUTDIR}/data_results.tar.gz   ${RESULTSDIR}/functionnal ${RESULTSDIR}/structural ${RESULTSDIR}/logs ;
+  tar czf ${OUTPUTDIR}/data_results.tar.gz   ${RESULTSDIR}/functionnal ${RESULTSDIR}/structural ${RESULTSDIR}/logs  ${DATAROOT}/*.log;
   info "4 eval has been sent we get the results in a tarball we give the tarball to VIP";)
 
 info "End running ginfizz wrapper"
