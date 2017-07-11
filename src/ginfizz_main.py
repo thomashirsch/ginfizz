@@ -25,6 +25,13 @@ if __name__ == "__main__":
     roiatlasfile =  sys.argv[5]
     resultdir =  sys.argv[6]
     
+    # bug correction to change working dir before import
+    wd = os.chdir(resultdir)
+    print("wd=")
+    print(wd)
+
+    print(os.getcwd())
+
     import nipype.pipeline.engine as pe          # pypeline engine
     from nipype import Node
     

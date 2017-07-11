@@ -14,6 +14,12 @@ RUN mkdir /rstp_code
 COPY ./ginfizz_wrapper.sh  /rstp_code/ginfizz_wrapper.sh
 RUN   chmod 777  /rstp_code/ginfizz_wrapper.sh
 
+# debug du import nipype_level2 - essai de 
+RUN useradd -ms /bin/bash newuser
+USER newuser
+WORKDIR /home/newuser
+
+
 # on va recuperer le pipeline de preprocess en python
 
 COPY ./ginfizz_config.py              /rstp_code/ginfizz_config.py

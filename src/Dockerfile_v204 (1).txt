@@ -1,0 +1,28 @@
+FROM miykael/nipype_level2
+
+RUN echo "--- START   ----------"
+
+# 30 mars hackfest on monte une directory /rstp_data pour récupérer détarer le dataset et un autre pour mettre le code
+RUN mkdir /rstp_data
+RUN chmod o+w /rstp_data
+
+RUN mkdir /rstp_code
+RUN chmod o+w /rstp_code
+COPY ./ginfizz_wrapper.sh /rstp_code/ginfizz_wrapper.sh
+RUN chmod 777 /rstp_code/ginfizz_wrapper.sh
+
+# on va recuperer le pipeline de preprocess en python
+COPY ./ginfizz_config.py /rstp_code/ginfizz_config.py
+COPY ./ginfizz_tools.py /rstp_code/ginfizz_tools.py
+COPY ./ginfizz_main.py /rstp_code/ginfizz_main.py
+COPY ./ginfizz_preprocess.py /rstp_code/ginfizz_preprocess.py
+COPY ./ginfizz_bandpass.py /rstp_code/ginfizz_bandpass.py
+COPY ./ginfizz_aicha_ss_arima.py /rstp_code/ginfizz_aicha_ss_arima.py
+
+# 2 files from ginnipi/toolbox
+COPY ./computations.py /rstp_code/computations.py
+COPY ./flow.py /rstp_code/flow.py
+
+ENV PATH=${PATH}:/opt/conda/envs/python2/lib/python2.7/site-packages
+
+ENTRYPOINT ["/bin/bash"]
