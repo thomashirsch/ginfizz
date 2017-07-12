@@ -197,12 +197,9 @@ def aicha(roiatlasfile, resultdir):
         regMeants.inputs.order = 1     
         regMeants.inputs.output_type = 'NIFTI_GZ'     
         regMeants.inputs.terminal_output = 'stream'     
-        connectivity.connect(inputNodeAicha, "bandpassedFile" , regMeants, "in_file")   
-        
-        
-        # correlation computations
+        connectivity.connect(inputNodeAicha, "bandpassedFile" , regMeants, "in_file")
+         # correlation computations
         def computeCorrelations(residus, residusRegMean, brainMask):
-            
                 '''Function that takes 3 parameters
                    residus: the residu of arima time courses
                    residuRegMean: the residus mean on determined region i
@@ -212,40 +209,31 @@ def aicha(roiatlasfile, resultdir):
                    Computes pearson correlations between the seed eg. residuRegMean
                    and all the voxels of the brainMask
                    Returns an Nifti images containing the correlations'''
-                
                 import os
                 import numpy as np
-                import matplotlib.pyplot as plt
                 import nibabel as nib
                 from scipy.stats.stats import pearsonr
-                
                 # first we get the seed mean signal
                 seed_ts_array = np.loadtxt(residusRegMean)
-                
                 # from an other hand we get the residus 4D matrix
                 fmri_data=nib.load(residus) 
                 fmri_array=np.asarray(fmri_data.dataobj)
-                
                 # we get the coordinnates of voxels in all gm and wm normalized todo 
                 reg_data=nib.load(brainMask) 
                 regarray=np.asarray(reg_data.dataobj)
                 # transpose(nonzero(a))
                 reg_coords = np.transpose(np.nonzero(regarray))
                 volume_shape = reg_coords.shape
-                print volume_shape
+                #print volume_shape
                 coords = list(np.ndindex(volume_shape))
-                print len(coords)
-                
+                #print len(coords)
                 # the we iterate the correlation calculation on all voxels of the brain mask
-            
                 # the correlation matrix is initialized with all values to 0 
                 corr_matrix = np.full(reg_data.shape, 0, dtype=float)
-            
                 for i in range(reg_coords.shape[0]):
                         target_array = fmri_array[reg_coords[i, 0], reg_coords[i, 1],reg_coords[i,2], :]
                         #print target_array
                         non_zero_nb = np.count_nonzero(target_array)
-                    
                        # if target time courses are all null, we do not compute correlation
                         if non_zero_nb:
                                 try:
@@ -253,16 +241,13 @@ def aicha(roiatlasfile, resultdir):
                                         corr_matrix[reg_coords[i, 0], reg_coords[i, 1],reg_coords[i,2]] = p[0] 
                                 except:
                                         print("exception calculating pearson correlation") 
-                
                 # save matrix in a file
                 # create the resulting image
                 corr_image = nib.Nifti1Image(corr_matrix,affine=reg_data.affine, header=reg_data.header)
                 # save the correlation array 
                 out_file = os.path.join(os.getcwd(), "corr_roi_reg.nii")
                 nib.save(corr_image, out_file)
-                
                 return out_file
-                
         # node to compute the correlation matrix as each region i of user atlas mean signal serves as a seed 
         # and brain mask signal residuserves as the targets
         # def computeCorrelations(residus, residusRegMean, brainMask):
